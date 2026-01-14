@@ -19,12 +19,13 @@ export default async function handler(req, res) {
     console.log(`[INGEST] Recibidos ${data.length} registros del Sniffer.`);
 
     // Estrategia híbrida: Vercel Postgres (NUBE) vs Archivo (LOCAL)
+    let dbError = null;
     try {
       if (process.env.POSTGRES_URL) {
         // Importación dinámica compatible con ESM
         const { sql } = await import('@vercel/postgres');
 
-        // --- INICIALIZACIÓN DE TABLAS (Separadas para evitar errores de protocolo) ---
+        // --- INICIALIZACIÓN DE TABLAS ---
         try {
           await sql`CREATE TABLE IF NOT EXISTS vendors (oui VARCHAR(6) PRIMARY KEY, vendor_name VARCHAR(255));`;
           await sql`CREATE TABLE IF NOT EXISTS detections (
@@ -45,16 +46,8 @@ export default async function handler(req, res) {
                 last_seen TIMESTAMPTZ DEFAULT NOW()
             );`;
         } catch (initErr) {
-          console.warn("[INGEST] Aviso en inicialización (posiblemente ya existe):", initErr.message);
+          console.warn("[INGEST] Warning en init:", initErr.message);
         }
-
-        // Migración: Asegurar raw_packet y TIMESTAMPTZ (opcional/silencioso)
-        try {
-          await sql`ALTER TABLE detections ADD COLUMN IF NOT EXISTS raw_packet TEXT;`;
-          // Convertir a TIMESTAMPTZ si era TIMESTAMP (evita issues de zona horaria)
-          await sql`ALTER TABLE detections ALTER COLUMN created_at TYPE TIMESTAMPTZ;`;
-          await sql`ALTER TABLE nodes ALTER COLUMN last_seen TYPE TIMESTAMPTZ;`;
-        } catch (e) { /* Ya migrado o sin permisos */ }
 
         // --- LÓGICA DE VENDORS (OUI LOOKUP) ---
         const ouis = [...new Set(data.map(d =>
@@ -64,48 +57,55 @@ export default async function handler(req, res) {
         const vendorMap = {};
         if (ouis.length > 0) {
           try {
-            // Buscamos los fabricantes en la tabla 'vendors'
             const { rows } = await sql`SELECT oui, vendor_name FROM vendors WHERE oui = ANY(${ouis})`;
-            rows.forEach(v => {
-              vendorMap[v.oui] = v.vendor_name;
-            });
+            rows.forEach(v => vendorMap[v.oui] = v.vendor_name);
           } catch (vErr) {
-            console.error("[INGEST] Error consultando vendors:", vErr.message);
+            console.error("[INGEST] Error vendors:", vErr.message);
           }
         }
 
         // --- INSERCIÓN DE DATOS ---
+        let successCount = 0;
         for (const d of data) {
-          if (!d.mac || d.mac.length !== 17) continue;
+          try {
+            if (!d.mac || d.mac.length !== 17) continue;
 
-          // Filtro Multicast/Broadcast (Bit 0 del primer byte)
-          const firstByte = parseInt(d.mac.substring(0, 2), 16);
-          if (isNaN(firstByte) || (firstByte & 0x01)) {
-            continue;
+            // Filtro Multicast/Broadcast (Bit 0 del primer byte)
+            const firstByte = parseInt(d.mac.substring(0, 2), 16);
+            if (isNaN(firstByte) || (firstByte & 0x01)) continue;
+
+            const oui = d.mac.replace(/:/g, '').substring(0, 6).toUpperCase();
+            const detectedVendor = vendorMap[oui] || d.vendor || 'Fabricante Desconocido';
+
+            // 1. Insertar Detección
+            await sql`INSERT INTO detections (nodo, mac, rssi, fingerprint, vendor, raw_packet, created_at) 
+                      VALUES (${d.nodo}, ${d.mac}, ${d.rssi}, ${d.fingerprint}, ${detectedVendor}, ${d.raw_packet || ''}, NOW());`;
+
+            // 2. Actualizar Nodo
+            const nIdLower = d.nodo.toLowerCase();
+            const nodeType = (nIdLower.includes('nodows') || nIdLower.includes('nodesw') || nIdLower.includes('standalone')) ? 'standalone' : 'mesh';
+            await sql`INSERT INTO nodes (id, type, last_seen) 
+                      VALUES (${d.nodo}, ${nodeType}, NOW())
+                      ON CONFLICT (id) DO UPDATE SET 
+                          type = EXCLUDED.type,
+                          last_seen = NOW();`;
+
+            successCount++;
+          } catch (rowErr) {
+            console.error(`[INGEST] Error en registro ${d.mac}:`, rowErr.message);
+            dbError = rowErr.message;
           }
-
-          const oui = d.mac.replace(/:/g, '').substring(0, 6).toUpperCase();
-          const detectedVendor = vendorMap[oui] || d.vendor || 'Fabricante Desconocido';
-
-          // Insertar Detección
-          await sql`INSERT INTO detections (nodo, mac, rssi, fingerprint, vendor, raw_packet, created_at) 
-                    VALUES (${d.nodo}, ${d.mac}, ${d.rssi}, ${d.fingerprint}, ${detectedVendor}, ${d.raw_packet || ''}, NOW());`;
-
-          // Actualizar Nodo
-          const nIdLower = d.nodo.toLowerCase();
-          const nodeType = (nIdLower.includes('nodows') || nIdLower.includes('nodesw') || nIdLower.includes('standalone')) ? 'standalone' : 'mesh';
-          await sql`INSERT INTO nodes (id, type, last_seen) 
-                    VALUES (${d.nodo}, ${nodeType}, NOW())
-                    ON CONFLICT (id) DO UPDATE SET 
-                        type = EXCLUDED.type,
-                        last_seen = NOW();`;
         }
 
-        console.log(`[INGEST] OK: ${data.length} registros guardados en Postgres.`);
-        return res.status(200).json({ success: true, mode: 'cloud' });
+        if (successCount > 0) {
+          return res.status(200).json({ success: true, count: successCount, mode: 'cloud', error: dbError });
+        } else if (dbError) {
+          throw new Error(dbError);
+        }
       }
     } catch (err) {
-      console.error("[INGEST] CRASH CRÍTICO en Postgres:", err.message);
+      console.error("[INGEST] CRASH:", err.message);
+      dbError = err.message;
     }
 
     // --- FALLBACK LOCAL (Archivo CSV) ---
@@ -114,19 +114,17 @@ export default async function handler(req, res) {
     const dbDir = isLambda ? '/tmp' : process.cwd();
     const dbFile = path.join(dbDir, 'captures.csv');
 
-    // Si no existe, creamos cabecera
-    if (!fs.existsSync(dbFile)) {
-      fs.writeFileSync(dbFile, 'Timestamp,Nodo,MAC,RSSI,Fingerprint,Fabricante\n');
+    try {
+      // Si no existe, creamos cabecera
+      if (!fs.existsSync(dbFile)) {
+        fs.writeFileSync(dbFile, 'Timestamp,Nodo,MAC,RSSI,Fingerprint,Fabricante\n');
+      }
+      const csvLines = data.map(d => `${new Date().toISOString()},${d.nodo},${d.mac},${d.rssi},${d.fingerprint},"${d.vendor || ''}"`).join('\n');
+      fs.appendFileSync(dbFile, csvLines + '\n');
+      return res.status(200).json({ success: true, count: data.length, mode: 'local', error: dbError });
+    } catch (fErr) {
+      return res.status(500).json({ success: false, error: dbError || fErr.message });
     }
-
-    const csvLines = data.map(d =>
-      `${new Date().toISOString()},${d.nodo},${d.mac},${d.rssi},${d.fingerprint},"${d.vendor || ''}"`
-    ).join('\n');
-
-    fs.appendFileSync(dbFile, csvLines + '\n');
-    console.log(`   + Guardados en: ${dbFile}`);
-
-    return res.status(200).json({ success: true, count: data.length, file: dbFile });
   }
 
   // Manejo de otros métodos
