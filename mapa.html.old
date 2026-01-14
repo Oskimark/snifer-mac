@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Planificador Táctico 3000m - 13° Offset</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #05050a; color: #00eaff; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        #controls { background: rgba(10, 10, 30, 0.95); padding: 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; z-index: 1000; border-bottom: 1px solid #00eaff55; }
+        #map { flex: 1; width: 100%; }
+        .val-display { color: white; font-weight: bold; }
+        input[type=range], select { width: 100%; accent-color: #00eaff; background: #111; color: white; border: 1px solid #00eaff33; border-radius: 4px; padding: 5px; }
+        label { font-size: 0.7em; text-transform: uppercase; color: #88aaff; }
+        .sniffer-circle { stroke: #00eaff; stroke-width: 1; fill: #00eaff; fill-opacity: 0.15; stroke-dasharray: 4; }
+    </style>
+</head>
+<body>
+
+<div id="controls">
+<div style="display:flex; align-items:center;">
+        <button onclick="window.location.href='index.html'" style="background:#ef4444; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer; font-weight:bold;">✖ VOLVER</button>
+    </div>
+    <div>
+        <label>Distancia Nodos (m): <span class="val-display" id="stepVal">300</span>m</label>
+        <input type="range" id="stepRange" min="150" max="800" value="300" oninput="actualizar()">
+    </div>
+    <div>
+        <label>Radio Captura (m): <span class="val-display" id="radioVal">150</span>m</label>
+        <input type="range" id="radioRange" min="50" max="500" value="150" oninput="actualizar()">
+    </div>
+    <div>
+        <label>Geometría de Red:</label>
+        <select id="geoMode" onchange="actualizar()">
+            <option value="triangulo">Tresbolillo (Triangular)</option>
+            <option value="cuadricula">Cuadrícula (Rectangular)</option>
+        </select>
+    </div>
+    <div>
+        <label>Ajuste de Bordes:</label>
+        <select id="edgeMode" onchange="actualizar()">
+            <option value="conBordes">Esquinas Externas</option>
+            <option value="sinBordes">Margen Interno (Optimizado)</option>
+        </select>
+    </div>
+    <div style="text-align:center; border-left: 1px solid #333;">
+        <label>Nodos Totales</label><br>
+        <span id="nodeCount" style="color:#00ff00; font-size: 1.4em; font-weight: bold;">0</span>
+    </div>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    const map = L.map('map').setView([-34.6037, -58.3816], 14); 
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+
+    let layerGroup = L.layerGroup().addTo(map);
+    let origen = map.getCenter();
+
+    // Fijar origen con doble clic
+    map.on('dblclick', (e) => { origen = e.latlng; actualizar(); });
+
+    function actualizar() {
+        layerGroup.clearLayers();
+        
+        const stepM = parseInt(document.getElementById('stepRange').value);
+        const radioM = parseInt(document.getElementById('radioRange').value);
+        const geoMode = document.getElementById('geoMode').value;
+        const edgeMode = document.getElementById('edgeMode').value;
+        
+        document.getElementById('stepVal').innerText = stepM;
+        document.getElementById('radioVal').innerText = radioM;
+
+        const ANGULO_FIJO = 13 * (Math.PI / 180);
+        const AREA_TOTAL = 3000; // 3000 metros
+        
+        const mToLat = 1 / 111320;
+        const mToLng = 1 / (111320 * Math.cos(origen.lat * Math.PI / 180));
+
+        let contador = 0;
+        
+        // El bucle ahora corre hasta cubrir los 3000 metros
+        for (let yM = 0; yM <= AREA_TOTAL; yM += stepM) {
+            
+            // Ajuste sin bordes: saltar la primera y última línea si es necesario
+            if (edgeMode === "sinBordes" && (yM === 0 || yM + stepM > AREA_TOTAL)) continue;
+
+            for (let xM = 0; xM <= AREA_TOTAL; xM += stepM) {
+                
+                if (edgeMode === "sinBordes" && (xM === 0 || xM + stepM > AREA_TOTAL)) continue;
+
+                let actualXM = xM;
+                // Aplicar desplazamiento si es modo triángulo
+                if (geoMode === "triangulo" && (Math.round(yM/stepM) % 2 !== 0)) {
+                    actualXM += stepM / 2;
+                }
+
+                // Rotación fija a 13 grados
+                const rotX = actualXM * Math.cos(ANGULO_FIJO) - yM * Math.sin(ANGULO_FIJO);
+                const rotY = actualXM * Math.sin(ANGULO_FIJO) + yM * Math.cos(ANGULO_FIJO);
+
+                const lat = origen.lat + (rotY * mToLat);
+                const lng = origen.lng + (rotX * mToLng);
+
+                L.circle([lat, lng], { radius: radioM, className: 'sniffer-circle' }).addTo(layerGroup);
+                L.circleMarker([lat, lng], { radius: 3, color: '#ff4444', fillOpacity: 1 }).addTo(layerGroup);
+                
+                contador++;
+            }
+        }
+        document.getElementById('nodeCount').innerText = contador;
+    }
+
+    actualizar();
+</script>
+</body>
+</html>

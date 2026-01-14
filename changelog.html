@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Changelog - Snifer Tactico</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            line-height: 1.6;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+        }
+
+        h1 {
+            color: #38bdf8;
+            border-bottom: 2px solid #334155;
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            color: #8b5cf6;
+            margin-top: 30px;
+        }
+
+        .version {
+            background: #334155;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 10px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        li::before {
+            content: "•";
+            color: #38bdf8;
+            position: absolute;
+            left: 0;
+        }
+
+        .date {
+            color: #94a3b8;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>📜 Registro de Cambios (Changelog)</h1>
+
+        <h2>Versión 1.3.0 <span class="version">ACTUAL</span></h2>
+        <p class="date">13 de Enero, 2026</p>
+        <ul>
+            <li><strong>Configuración de Dispositivos (Épica 5):</strong>
+                <ul>
+                    <li><strong>Portal de Configuración:</strong> Integración de <code>WiFiManager</code> en nodos
+                        standalone (<code>stWIFI.ino</code>).</li>
+                    <li><strong>Sin Hardcodeo:</strong> Ya no es necesario editar el código para cambiar el WiFi, el ID
+                        del Nodo o la URL de la API.</li>
+                    <li><strong>Punto de Acceso <code>SNIFER-CONFIG</code>:</strong> El nodo crea su propia red para
+                        configuración inicial o cambios en campo.</li>
+                    <li><strong>Persistencia LittleFS:</strong> Los parámetros personalizados se guardan de forma segura
+                        en el sistema de archivos del ESP8266.</li>
+                </ul>
+            </li>
+        </ul>
+
+        <h2>Versión 1.2.2</h2>
+        <p class="date">13 de Enero, 2026</p>
+        <ul>
+            <li><strong>Telemetría Avanzada y Estadísticas (Épica 4):</strong>
+                <ul>
+                    <li><strong>Nuevo Panel de MAC:</strong> Al hacer clic en una MAC, se muestra el total histórico de
+                        avistamientos y el desglose detallado por nodo.</li>
+                    <li><strong>Estadísticas Reales de Nodo:</strong> El panel lateral de nodo ahora muestra datos
+                        extraídos de la base de datos: Total Histórico y Detecciones en la última hora.</li>
+                    <li><strong>API de Estadísticas:</strong> Implementado <code>/api/stats</code> para agregación
+                        eficiente de datos.</li>
+                    <li><strong>Mejora de UX:</strong> Los paneles laterales se gestionan de forma inteligente para no
+                        solaparse.</li>
+                </ul>
+            </li>
+        </ul>
+
+        <h2>Versión 1.2.1</h2>
+        <p class="date">13 de Enero, 2026</p>
+        <ul>
+            <li><strong>Interfaz y Experiencia en Campo (Épica 3):</strong>
+                <ul>
+                    <li><strong>Refactorización de Clics:</strong> Separación de acciones en la tabla principal.</li>
+                    <li><strong>Acceso a Paquetes:</strong> Clic en el "Fingerprint" para abrir el Inspector Hexadecimal
+                        directamente.</li>
+                    <li><strong>Panel de Nodo (Sidebar):</strong> Nuevo panel lateral al hacer clic en el nombre del
+                        nodo con telemetría integrada.</li>
+                    <li><strong>Telemetría de Nodo:</strong> Visualización de salud (Online/Offline), tipo, coordenadas
+                        y conteo de capturas en tiempo real.</li>
+                </ul>
+            </li>
+        </ul>
+
+        <h2>Versión 1.2.0</h2>
+        <p class="date">13 de Enero, 2026</p>
+        <ul>
+            <li><strong>Gestión de Mapa Táctico (Épica 2):</strong>
+                <ul>
+                    <li><strong>Marcadores Arrastrables:</strong> Los sensores se pueden posicionar moviéndolos en el
+                        mapa.</li>
+                    <li><strong>Persistencia de Ubicación:</strong> Diálogo de confirmación para guardar coordenadas en
+                        base de datos.</li>
+                    <li><strong>Identificación Visual:</strong> Colores distintos para nodos Mesh (Rojo) y Standalone
+                        (Ambar).</li>
+                    <li><strong>Watchdog:</strong> Los nodos inactivos (>120s) cambian a color gris automáticamente.
+                    </li>
+                </ul>
+            </li>
+            <li><strong>Colorización de MACs:</strong> Distinción visual entre MACs reales (Azul) y aleatorias (Rojo).
+            </li>
+        </ul>
+
+        <h2>Versión 1.0.9</h2>
+        <p class="date">13 de Enero, 2026</p>
+        <ul>
+            <li><strong>Diagnóstico por Hardware (LED):</strong> Feedback visual mediante el LED integrado para estados
+                de captura, búsqueda de red y transmisión.</li>
+            <li><strong>Nuevo Nodo "WiFi Standalone":</strong> Introducción de <code>stWIFI.ino</code> para despliegues
+                sin red Mesh.</li>
+            <li><strong>Optimización de Captura:</strong> Mejoras en el buffer de envío para tramas extensas.</li>
+        </ul>
+
+        <h2>Versión 1.0.8</h2>
+        <p class="date">13 de Enero, 2026</p>
+        <ul>
+            <li><strong>Inspector de Trama Avanzado:</strong> UI rediseñada tipo rejilla (grid) con colores específicos
+                para cada campo del frame 802.11.</li>
+            <li><strong>Metadatos de Radio:</strong> Se incluyen ahora los bytes de control del ESP8266 (RadioTap
+                Header) en la visualización.</li>
+            <li><strong>Tooltips Detallados:</strong> Cada byte ahora muestra su función al pasar el cursor.</li>
+        </ul>
+
+        <h2>Versión 1.0.7</h2>
+        <p class="date">13 de Enero, 2026</p>
+        <ul>
+            <li><strong>Captura de Paquete Completo:</strong> El esclavo ahora envía los primeros 64 bytes de la trama
+                802.11 real en hexadecimal.</li>
+            <li><strong>Visor de Paquetes Mejorado:</strong> El modal de detalle ahora discrimina bloques del frame real
+                (Frame Control, Duration, Addrs, Payload).</li>
+            <li><strong>Persistencia de Raw Data:</strong> Se añadió la columna <code>raw_packet</code> en la base de
+                datos para análisis forense.</li>
+            <li><strong>Headers de Versión:</strong> Todos los archivos críticos ahora incluyen una cabecera con su
+                versión y cambios.</li>
+        </ul>
+
+        <h2>Versión 1.0.6</h2>
+        <p class="date">13 de Enero, 2026</p>
+        <ul>
+            <li><strong>Timestamp Estático:</strong> Cambio de tiempo relativo ("hace 2s") a fecha y hora absoluta en
+                GMT-3.</li>
+            <li><strong>Restauración de Visor:</strong> Re-implementación del modal de detalles mediante clic en la
+                lista.</li>
+        </ul>
+
+        <h2>Versión 1.0.5</h2>
+        <ul>
+            <li>Integración inicial con Vercel Postgres y Dashboard unificado.</li>
+        </ul>
+    </div>
+</body>
+
+</html>

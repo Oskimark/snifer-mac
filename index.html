@@ -1,0 +1,1049 @@
+<!-- 
+  SNIFER TACTICO - DASHBOARD
+  Versión: 1.0.7
+  Modificaciones: 
+  - Integración de visualización de paquetes reales (Full Frames).
+  - Enlace dinámico a Changelog.
+  - Mejora en la persistencia de datos históricos.
+-->
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>WiFi Sniffer Pro - Mesh Dashboard</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --panel: #1e293b;
+            --text: #f8fafc;
+            --accent: #38bdf8;
+            --border: #334155;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--panel);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: #334155;
+            color: var(--accent);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+
+        tr.master-row {
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        tr.master-row:hover {
+            background: #2d3a4f;
+        }
+
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.85rem;
+        }
+
+        .btn-connect {
+            background: var(--accent);
+            color: var(--bg);
+        }
+
+        .btn-disconnect {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-action {
+            background: #64748b;
+            color: white;
+        }
+
+        .btn-save {
+            background: #22c55e;
+            color: white;
+        }
+
+        .status {
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        .badge-node {
+            background: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+            border: 1px solid #38bdf8;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-family: monospace;
+        }
+
+        code {
+            background: #0f172a;
+            padding: 2px 5px;
+            border-radius: 3px;
+            color: #e2e8f0;
+            border: 1px solid #334155;
+        }
+
+
+        /* MODALS */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: var(--panel);
+            width: 90%;
+            height: 90%;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .modal-header {
+            padding: 15px 20px;
+            background: #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-body {
+            flex: 1;
+            padding: 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: #cbd5e1;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .modal-close:hover {
+            color: white;
+        }
+
+        /* Records Specifics */
+        .records-controls {
+            padding: 15px;
+            display: flex;
+            gap: 10px;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .records-table-container {
+            overflow-y: auto;
+            height: 100%;
+            padding: 20px;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            padding: 15px;
+            background: var(--panel);
+            border-top: 1px solid var(--border);
+        }
+
+        input[type="text"] {
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--accent);
+        }
+
+        /* Packet Viewer Styling */
+        .packet-block {
+            display: inline-block;
+            padding: 2px 4px;
+            margin: 0 1px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-weight: bold;
+            cursor: help;
+            position: relative;
+        }
+
+        .block-fc {
+            background: #3b82f6;
+            color: white;
+        }
+
+        /* Frame Control */
+        .block-dur {
+            background: #10b981;
+            color: white;
+        }
+
+        /* Duration */
+        .block-seq {
+            background: #f59e0b;
+            color: white;
+        }
+
+        /* Sequence */
+        .block-extra {
+            background: #6366f1;
+            color: white;
+        }
+
+        .packet-viewer-content {
+            font-family: monospace;
+            font-size: 1.1rem;
+            line-height: 2;
+            background: #0f172a;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid var(--border);
+        }
+
+        .legend {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            font-size: 0.85rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        /* Advanced Packet Inspector Styling */
+        .packet-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .byte-box {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: white;
+            cursor: help;
+            transition: transform 0.1s;
+        }
+
+        .byte-box:hover {
+            transform: scale(1.15);
+            z-index: 10;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+        }
+
+        /* Color Palette matching user image */
+        .c-rt {
+            background: #4b5563;
+        }
+
+        /* RadioTap/Meta */
+        .c-fc {
+            background: #ef4444;
+        }
+
+        /* Frame Control */
+        .c-dur {
+            background: #b91c1c;
+        }
+
+        /* Duration */
+        .c-dest {
+            background: #1d4ed8;
+        }
+
+        /* Destination */
+        .c-src {
+            background: #3b82f6;
+        }
+
+        /* Source */
+        .c-bssid {
+            background: #60a5fa;
+        }
+
+        /* BSSID */
+        .c-seq {
+            background: #a855f7;
+        }
+
+        /* Sequence */
+        .c-ssid {
+            background: #065f46;
+        }
+
+        /* SSID */
+        .c-rates {
+            background: #059669;
+        }
+
+        /* Rates */
+        .c-ie {
+            background: #10b981;
+        }
+
+        /* General IEs */
+        .c-vend {
+            background: #f59e0b;
+        }
+
+        /* Vendor Specific */
+        .c-def {
+            background: #334155;
+        }
+
+        /* Default/Unknown */
+
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 8px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        .l-box {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+        .btn-close-modal {
+            background: #ef4444;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* SIDEBAR NODO */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 350px;
+            height: 100%;
+            background: var(--panel);
+            box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
+            transition: 0.3s;
+            z-index: 2000;
+            padding: 25px;
+            border-left: 2px solid var(--accent);
+            color: var(--text);
+        }
+
+        .sidebar.open {
+            right: 0;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .sidebar-stat {
+            background: var(--bg);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .sidebar-stat label {
+            display: block;
+            font-size: 0.7rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+        }
+
+        .sidebar-stat span {
+            font-size: 1rem;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .clickable-cell {
+            cursor: pointer;
+            text-decoration: underline dotted;
+        }
+
+        .clickable-cell:hover {
+            color: var(--accent);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- SIDEBAR DE NODO -->
+    <div id="nodeSidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h2 id="sbNodeId" style="margin:0; color:var(--accent);">NODO: ---</h2>
+            <button class="btn-close-modal" onclick="closeSidebar()">X</button>
+        </div>
+        <div class="sidebar-stat">
+            <label>Estado / Salud</label>
+            <span id="sbStatus">---</span>
+        </div>
+        <div class="sidebar-stat">
+            <label>Tipo de Nodo</label>
+            <span id="sbType">---</span>
+        </div>
+        <div class="sidebar-stat">
+            <label>Ubicación (Lat, Lng)</label>
+            <span id="sbCoords">---</span>
+        </div>
+        <div class="sidebar-stat">
+            <label>Última Actividad</label>
+            <span id="sbLastSeen">---</span>
+        </div>
+        <div class="sidebar-stat">
+            <label>Total Detecciones (Histórico)</label>
+            <span id="sbTotal">0</span>
+        </div>
+        <div class="sidebar-stat">
+            <label>Detecciones (Última Hora)</label>
+            <span id="sbRecent">0</span>
+        </div>
+        <button class="btn" style="margin-top:20px; width:100%" onclick="window.open('mapa.html','_blank')">VER EN
+            MAPA</button>
+    </div>
+
+    <!-- SIDEBAR DE DISPOSITIVO (MAC) -->
+    <div id="macSidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h2 id="sbMacId" style="margin:0; color:var(--accent); font-size:1.2rem;">MAC: ---</h2>
+            <button class="btn-close-modal" onclick="closeSidebar()">X</button>
+        </div>
+        <div class="sidebar-stat">
+            <label>Total Avistamientos</label>
+            <span id="sbMacTotal">0</span>
+        </div>
+        <div style="margin-top:20px;">
+            <label style="font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; font-weight:bold;">Desglose por
+                Nodo</label>
+            <div id="sbMacBreakdown" style="margin-top:10px; font-size: 0.9rem;">
+                <!-- Lista de nodos -->
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <div>
+                <h1>📡 Mesh Sniffer Dashboard <small
+                        style="font-size:0.5em; color:var(--accent); vertical-align:middle; cursor:pointer;"
+                        onclick="window.open('changelog.html', '_blank')">v1.2.2</small></h1>
+                <div id="db-status" class="status">Cargando base de datos de fabricantes...</div>
+            </div>
+            <div class="controls">
+                <button class="btn btn-action" onclick="window.open('mapa.html', '_blank')"
+                    style="background:#0ea5e9">📍
+                    VER MAPA (Nueva Pestaña)</button>
+                <button class="btn btn-action" onclick="openRecordsModal()" style="background:#8b5cf6">📂 VER
+                    REGISTROS</button>
+                <div id="cloudStatus" class="btn btn-action" style="background:#334155; opacity: 0.8; cursor: default;">
+                    ☁️ Sincronizado</div>
+                <button id="saveBtn" class="btn btn-save">💾 GUARDAR CSV</button>
+                <button id="serialBtn" class="btn btn-connect">CONECTAR MAESTRO</button>
+            </div>
+        </header>
+
+        <table id="mainTable">
+            <thead>
+                <tr>
+                    <th>Nodo Origen</th>
+                    <th>MAC / Fabricante</th>
+                    <th>Fingerprint</th>
+                    <th>Señal (RSSI)</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody id="dataTable"></tbody>
+        </table>
+    </div>
+
+
+
+    <!-- RECORDS MODAL -->
+    <div id="recordsModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 style="margin:0; color:#8b5cf6;">📂 Registros Históricos</h3>
+                <button class="modal-close" onclick="closeModals()">×</button>
+            </div>
+            <div class="modal-body" style="display:flex; flex-direction:column;">
+                <div class="records-controls">
+                    <input type="text" id="recordSearch" placeholder="Buscar MAC o Fabricante..." style="width: 300px;">
+                    <button class="btn btn-action" onclick="loadRecords(1)">🔍 Buscar</button>
+                </div>
+                <div class="records-table-container">
+                    <table id="recordsTable">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Nodo</th>
+                                <th>MAC</th>
+                                <th>Fabricante</th>
+                                <th>RSSI</th>
+                                <th>Fingerprint</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recordsBody"></tbody>
+                    </table>
+                </div>
+                <div class="pagination">
+                    <button class="btn btn-action" id="prevPage" onclick="changePage(-1)">⬅️ Anterior</button>
+                    <span id="pageInfo" style="align-self:center; color:#94a3b8;">Página 1</span>
+                    <button class="btn btn-action" id="nextPage" onclick="changePage(1)">Siguiente ➡️</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PACKET DETAIL MODAL -->
+    <div id="packetModal" class="modal-overlay">
+        <div class="modal-content" style="width: 850px; height: auto; max-width: 95vw;">
+            <div class="modal-header">
+                <h3 style="margin:0; color:var(--accent);">🔎 Inspector de Trama Avanzado</h3>
+                <button class="btn-close-modal" onclick="closeModals()">CERRAR</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <div id="packetInfo" style="margin-bottom: 15px; color: #94a3b8; font-size: 0.9rem;"></div>
+
+                <div id="packetDisplay" class="packet-grid"></div>
+
+                <div class="legend-grid">
+                    <div class="legend-item">
+                        <div class="l-box c-rt"></div> RadioTap / Meta
+                    </div>
+                    <div class="legend-item">
+                        <div class="l-box c-fc"></div> Frame Control
+                    </div>
+                    <div class="legend-item">
+                        <div class="l-box c-dur"></div> Duration
+                    </div>
+                    <div class="legend-item">
+                        <div class="l-box c-dest"></div> Destination
+                    </div>
+                    <div class="legend-item">
+                        <div class="l-box c-src"></div> Source MAC
+                    </div>
+                    <div class="legend-item">
+                        <div class="l-box c-bssid"></div> BSSID
+                    </div>
+                    <div class="legend-item">
+                        <div class="l-box c-seq"></div> Sequence Ctrl
+                    </div>
+                    <div class="legend-item">
+                        <div class="l-box c-ssid"></div> IE: SSID
+                    </div>
+                    <div class="legend-item">
+                        <div class="l-box c-ie"></div> IEs / Tags
+                    </div>
+                    <div class="legend-item">
+                        <div class="l-box c-vend"></div> Vendor Specific
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // ==========================================
+        // 1. SERIAL & CORE LOGIC
+        // ==========================================
+        let port, reader, keepReading = true;
+        const localVendors = {};
+        const detectionMap = new Map(); // Llave: MAC
+        let pendingTags = [];
+        const SYNC_INTERVAL_MS = 10000;
+
+        // Cargar base de datos de fabricantes (OUI)
+        async function loadVendors() {
+            try {
+                const response = await fetch('vendors.txt');
+                const text = await response.text();
+                text.split('\n').forEach(line => {
+                    const parts = line.split(',');
+                    if (parts.length >= 2) localVendors[parts[0].trim().toUpperCase()] = parts[1].trim();
+                });
+                document.getElementById('db-status').innerText = "Base de datos de fabricantes lista.";
+            } catch (e) {
+                document.getElementById('db-status').innerText = "Trabajando sin base de datos de fabricantes.";
+            }
+        }
+
+        // Serial Connection
+        document.getElementById('serialBtn').addEventListener('click', async () => {
+            if (port) {
+                keepReading = false;
+                reader.cancel();
+                await port.close();
+                port = null;
+                document.getElementById('serialBtn').innerText = "CONECTAR MAESTRO";
+                document.getElementById('serialBtn').className = "btn btn-connect";
+                return;
+            }
+
+            try {
+                port = await navigator.serial.requestPort();
+                await port.open({ baudRate: 115200 });
+                keepReading = true;
+                document.getElementById('serialBtn').innerText = "DESCONECTAR";
+                document.getElementById('serialBtn').className = "btn btn-disconnect";
+
+                const decoder = new TextDecoderStream();
+                port.readable.pipeTo(decoder.writable);
+                reader = decoder.readable.getReader();
+
+                let buffer = "";
+                while (keepReading) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    buffer += value;
+                    let lines = buffer.split("\n");
+                    buffer = lines.pop();
+
+                    for (let line of lines) {
+                        processLine(line.trim());
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                port = null;
+            }
+        });
+
+        function processLine(line) {
+            const data = line.split(",");
+            if (data.length < 4) return;
+            const [nodo, mac, rssi, fingerprint, raw_packet] = data;
+            const oui = mac.replace(/:/g, '').substring(0, 6).toUpperCase();
+            const vendor = localVendors[oui] || "Fabricante Desconocido";
+            updateUI(nodo, mac, rssi, fingerprint, vendor, raw_packet);
+        }
+
+        // Helper: Detectar si una MAC es aleatoria (Locally Administered Bit)
+        function isRandomizedMAC(mac) {
+            if (!mac || mac.length < 2) return false;
+            const secondChar = mac.charAt(1).toUpperCase();
+            // El bit 1 del primer byte indica si es local (aleatoria)
+            // Valores posibles para el segundo dígito hexadecimal: 2, 3, 6, 7, A, B, E, F
+            return ['2', '3', '6', '7', 'A', 'B', 'E', 'F'].includes(secondChar);
+        }
+
+        function updateUI(nodo, mac, rssi, fingerprint, vendor, raw_packet) {
+            const table = document.getElementById('dataTable');
+            let row = document.getElementById(`row-${mac}`);
+            const now = Date.now();
+
+            if (!row) {
+                row = table.insertRow(0);
+                row.id = `row-${mac}`;
+                row.className = 'master-row';
+            }
+
+            // Guardar para renderizar detalle al hacer clic
+            row.onclick = () => showPacketDetail(mac, fingerprint, nodo, rssi, vendor, now, raw_packet || "");
+
+            const isRandom = isRandomizedMAC(mac);
+            const macColor = isRandom ? "#ef4444" : "#3b82f6"; // Rojo aleatoria, Azul real
+            const typeBadge = isRandom ?
+                `<small style="color:#ef4444">[ALEATORIA]</small>` :
+                `<small style="color:#3b82f6">[REAL]</small>`;
+
+            row.innerHTML = `
+            <td><span class="badge-node clickable-cell" onclick="openNodeSidebar('${nodo}')">${nodo}</span></td>
+            <td><strong style="color:${macColor}" class="clickable-cell" onclick="openMacSidebar('${mac}')">${mac}</strong> ${typeBadge}<br><small style="color:#94a3b8">${vendor}</small></td>
+            <td class="clickable-cell" onclick="showPacketDetail('${mac}','${fingerprint}','${nodo}','${rssi}','${vendor}',Date.now(),'${raw_packet || ""}')"><code>${fingerprint}</code></td>
+            <td style="color:${getColorRSSI(rssi)}">${rssi} dBm</td>
+            <td class="status-cell">${new Date(now).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}</td>`;
+
+            detectionMap.set(mac, { nodo, mac, rssi, fingerprint, vendor, timestamp: now, raw_packet: raw_packet || "" });
+            pendingTags.push({ nodo, mac, rssi, fingerprint, vendor, timestamp: now, raw_packet: raw_packet || "" });
+
+            // Si estamos triangulando esta MAC en el mapa, actualizar en tiempo real
+            if (typeof isMapOpen !== 'undefined' && isMapOpen &&
+                typeof mapTargetMac !== 'undefined' && mapTargetMac === mac &&
+                typeof updateMapRealtime === 'function') {
+                updateMapRealtime(mac, nodo, rssi);
+            }
+        }
+
+        // --- FUNCIÓN DE DETALLE ---
+
+        function showPacketDetail(mac, fingerprint, nodo, rssi, vendor, time, raw_packet) {
+            const modal = document.getElementById('packetModal');
+            const info = document.getElementById('packetInfo');
+            const display = document.getElementById('packetDisplay');
+
+            modal.style.display = 'flex';
+            const timeStr = new Date(time).toLocaleString();
+            info.innerHTML = `<strong>MAC:</strong> ${mac} | <strong>Fabricante:</strong> ${vendor} | <strong>Nodo:</strong> ${nodo} | <strong>RSSI:</strong> ${rssi} dBm | <strong>Hora:</strong> ${timeStr}`;
+
+            // Si no hay raw_packet, usamos fingerprint (2 bytes = 4 hex)
+            const hex = raw_packet && raw_packet.length > 4 ? raw_packet : fingerprint;
+            display.innerHTML = "";
+
+            // Parsear byte a byte
+            for (let i = 0; i < hex.length; i += 2) {
+                const byteHex = hex.substring(i, i + 2);
+                const byteIdx = i / 2;
+                const span = document.createElement('span');
+                span.className = 'byte-box';
+                span.innerText = byteHex;
+
+                let label = "Byte " + byteIdx;
+                let colorClass = "c-def";
+
+                // Lógica de coloreado basada en offset 802.11
+                // NOTA: Si el paquete empieza en buf[12], el offset 0 es Frame Control
+                // Si el paquete empieza en buf[0], los primeros 12 son RadioTap/Meta
+
+                const isFullPacket = (hex.length > 20); // Heurística simple
+
+                let offset = byteIdx;
+                if (isFullPacket && hex.length > 40) {
+                    // Asumimos que incluye Meta (12 bytes)
+                    if (offset < 12) { colorClass = "c-rt"; label = "RadioTap / Meta Header"; }
+                    else if (offset < 14) { colorClass = "c-fc"; label = "Frame Control (802.11)"; }
+                    else if (offset < 16) { colorClass = "c-dur"; label = "Duration / ID"; }
+                    else if (offset < 22) { colorClass = "c-dest"; label = "Destination MAC (Broadcast)"; }
+                    else if (offset < 28) { colorClass = "c-src"; label = "Source MAC (Client)"; }
+                    else if (offset < 34) { colorClass = "c-bssid"; label = "BSSID"; }
+                    else if (offset < 36) { colorClass = "c-seq"; label = "Sequence Control"; }
+                    else {
+                        // Information Elements (Tags)
+                        if (byteHex === "00") { colorClass = "c-ssid"; label = "IE Tag (SSID)"; }
+                        else if (byteHex === "DD") { colorClass = "c-vend"; label = "Vendor Specific Tag"; }
+                        else { colorClass = "c-ie"; label = "Information Element Data"; }
+                    }
+                } else {
+                    // Fallback para fingerprints o paquetes sin cabecera meta
+                    if (offset < 2) { colorClass = "c-fc"; label = "Frame Control"; }
+                    else if (offset < 4) { colorClass = "c-dur"; label = "Duration"; }
+                    else if (offset < 6) { colorClass = "c-seq"; label = "Sequence Control"; }
+                    else { colorClass = "c-ie"; label = "Data"; }
+                }
+
+                span.classList.add(colorClass);
+                span.title = label;
+                display.appendChild(span);
+            }
+
+            modal.style.display = 'flex';
+        }
+
+        function getColorRSSI(rssi) {
+            const val = parseInt(rssi);
+            if (val > -60) return "#22c55e";
+            if (val > -80) return "#f59e0b";
+            return "#ef4444";
+        }
+
+        document.getElementById('saveBtn').addEventListener('click', () => {
+            let csv = "Nodo,MAC,Fabricante,RSSI,Fingerprint\n";
+            detectionMap.forEach(d => {
+                csv += `${d.nodo},${d.mac},"${d.vendor}",${d.rssi},${d.fingerprint}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const a = document.createElement('a');
+            a.href = window.URL.createObjectURL(blob);
+            a.download = `reporte_sniffer_${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+        });
+
+        async function syncCloud() {
+            if (pendingTags.length === 0) return;
+            const batch = [...pendingTags];
+            const statusEl = document.getElementById('cloudStatus');
+            statusEl.innerText = "⏳ Enviando...";
+            statusEl.style.background = "#eab308";
+
+            try {
+                const res = await fetch('/api/ingest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(batch)
+                });
+                if (res.ok) {
+                    pendingTags = pendingTags.filter(t => !batch.includes(t));
+                    statusEl.innerText = "☁️ Sincronizado";
+                    statusEl.style.background = "#334155";
+                }
+            } catch (e) {
+                console.error("Fallo Sync:", e);
+                statusEl.innerText = "❌ Error Nube";
+                statusEl.style.background = "#ef4444";
+            }
+        }
+        setInterval(syncCloud, SYNC_INTERVAL_MS);
+
+        // --- SIDEBAR LOGIC ---
+        function openNodeSidebar(nodeId) {
+            closeSidebar(); // Cierra otros sidebars
+            const sidebar = document.getElementById('nodeSidebar');
+            document.getElementById('sbNodeId').innerText = `NODO: ${nodeId}`;
+            sidebar.classList.add('open');
+
+            // Cargar datos del nodo desde la API de Nodos
+            fetch('/api/nodes').then(res => res.json()).then(nodes => {
+                const n = Array.isArray(nodes) ? nodes.find(node => node.id === nodeId) : null;
+                if (n) {
+                    // Calculamos diferencia. n.last_seen ahora viene en TIMESTAMPTZ (ISO)
+                    const lastSeenDate = new Date(n.last_seen);
+                    const now = new Date();
+                    const diffS = (now - lastSeenDate) / 1000;
+
+                    if (isNaN(diffS)) {
+                        document.getElementById('sbStatus').innerText = "❓ DESCONOCIDO";
+                    } else {
+                        document.getElementById('sbStatus').innerText = diffS < 150 ? "🟢 ONLINE" : "🔴 OFFLINE";
+                    }
+
+                    document.getElementById('sbType').innerText = (n.type || "mesh").toUpperCase();
+                    document.getElementById('sbCoords').innerText = n.lat ? `${n.lat.toFixed(6)}, ${n.lng.toFixed(6)}` : "Sin GPS";
+                    document.getElementById('sbLastSeen').innerText = lastSeenDate.toLocaleString();
+                } else {
+                    document.getElementById('sbStatus').innerText = "🔴 SIN REGISTRO";
+                }
+            }).catch(err => {
+                console.error("Error al obtener nodos:", err);
+                document.getElementById('sbStatus').innerText = "❌ ERROR API";
+            });
+
+            // Cargar estadísticas históricas desde /api/stats
+            fetch(`/api/stats?type=node&id=${nodeId}`)
+                .then(res => res.json())
+                .then(stats => {
+                    document.getElementById('sbTotal').innerText = stats.total || 0;
+                    document.getElementById('sbRecent').innerText = stats.last_hour || 0;
+                });
+        }
+
+        function openMacSidebar(mac) {
+            closeSidebar();
+            const sidebar = document.getElementById('macSidebar');
+            document.getElementById('sbMacId').innerText = `MAC: ${mac}`;
+            sidebar.classList.add('open');
+
+            fetch(`/api/stats?type=mac&mac=${mac}`)
+                .then(res => res.json())
+                .then(stats => {
+                    document.getElementById('sbMacTotal').innerText = stats.total || 0;
+                    const breakdownEl = document.getElementById('sbMacBreakdown');
+                    breakdownEl.innerHTML = '';
+
+                    if (stats.breakdown && stats.breakdown.length > 0) {
+                        stats.breakdown.forEach(b => {
+                            const item = document.createElement('div');
+                            item.style.marginBottom = '8px';
+                            item.style.display = 'flex';
+                            item.style.justifyContent = 'space-between';
+                            item.innerHTML = `<span>${b.nodo}</span> <span style="color:var(--accent)">${b.count}</span>`;
+                            breakdownEl.appendChild(item);
+                        });
+                    } else {
+                        breakdownEl.innerHTML = '<span style="color:#94a3b8">Sin datos.</span>';
+                    }
+                });
+        }
+
+        function closeSidebar() {
+            document.querySelectorAll('.sidebar').forEach(s => s.classList.remove('open'));
+        }
+
+        window.onload = loadVendors;
+
+        // ==========================================
+        // 4. RECORDS LOGIC
+        // ==========================================
+        function openRecordsModal() {
+            document.getElementById('recordsModal').style.display = 'flex';
+            loadRecords(1);
+        }
+
+        function closeModals() {
+            document.querySelectorAll('.modal-overlay').forEach(el => el.style.display = 'none');
+        }
+
+        window.onclick = function (event) {
+            if (event.target.classList.contains('modal-overlay')) {
+                closeModals();
+            }
+        }
+
+
+
+
+        let currentPage = 1;
+        const itemsPerPage = 50;
+
+        async function loadRecords(page = 1) {
+            currentPage = page;
+            const search = document.getElementById('recordSearch').value;
+            const tbody = document.getElementById('recordsBody');
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Cargando...</td></tr>';
+
+            try {
+                const res = await fetch(`/api/history?page=${page}&limit=${itemsPerPage}&search=${encodeURIComponent(search)}`);
+                const data = await res.json();
+
+                if (data.data) {
+                    renderRecordsTable(data.data);
+                    document.getElementById('pageInfo').innerText = `Página ${data.page} de ${Math.ceil(data.total / data.limit) || 1}`;
+                    document.getElementById('prevPage').disabled = data.page <= 1;
+                    document.getElementById('nextPage').disabled = (data.page * data.limit) >= data.total;
+                }
+            } catch (e) {
+                console.error(e);
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red">Error cargando registros</td></tr>';
+            }
+        }
+
+        function renderRecordsTable(rows) {
+            const tbody = document.getElementById('recordsBody');
+            tbody.innerHTML = '';
+            rows.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.className = 'master-row';
+
+                const isRandom = isRandomizedMAC(r.mac);
+                const macColor = isRandom ? "#ef4444" : "#3b82f6";
+                const typeLabel = isRandom ?
+                    `<small style="color:#ef4444; font-weight:bold;">[ALET]</small>` :
+                    `<small style="color:#3b82f6; font-weight:bold;">[REAL]</small>`;
+
+                tr.innerHTML = `
+                    <td>${new Date(r.created_at).toLocaleString()}</td>
+                    <td><span class="badge-node clickable-cell" onclick="openNodeSidebar('${r.nodo}')">${r.nodo}</span></td>
+                    <td><strong style="color:${macColor}" class="clickable-cell" onclick="openMacSidebar('${r.mac}')">${r.mac}</strong> ${typeLabel}</td>
+                    <td>${r.vendor || 'Desconocido'}</td>
+                    <td style="color:${getColorRSSI(r.rssi)}">${r.rssi}</td>
+                    <td class="clickable-cell" onclick="showPacketDetail('${r.mac}','${r.fingerprint}','${r.nodo}','${r.rssi}','${r.vendor || "En la nube"}','${r.created_at}','${r.raw_packet || ""}')"><code>${(r.raw_packet || r.fingerprint || "").substring(0, 12)}...</code></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function changePage(delta) {
+            loadRecords(currentPage + delta);
+        }
+
+        // Debounce search
+        let searchTimeout;
+        document.getElementById('recordSearch').addEventListener('input', () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => loadRecords(1), 500);
+        });
+
+
+    </script>
+</body>
+
+</html>
