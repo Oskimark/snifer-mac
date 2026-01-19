@@ -11,7 +11,7 @@ export default async function handler(req, res) {
             const macStr = String(mac).trim();
             // Modo Clásico: Historial completo para una MAC específica (para tracking)
             const { rows } = await sql`
-                SELECT nodo, rssi, created_at 
+                SELECT nodo, rssi, created_at, fingerprint, vendor, raw_packet 
                 FROM detections 
                 WHERE mac = ${macStr}
                 ORDER BY created_at ASC
@@ -26,23 +26,28 @@ export default async function handler(req, res) {
 
         if (search) {
             const searchPattern = `%${search}%`;
-            // Consulta de datos
+            // Consulta de datos con Alias
             query = sql`
-                SELECT * FROM detections 
-                WHERE mac ILIKE ${searchPattern} OR vendor ILIKE ${searchPattern}
-                ORDER BY created_at DESC
+                SELECT d.*, a.alias 
+                FROM detections d
+                LEFT JOIN mac_aliases a ON d.mac = a.mac
+                WHERE d.mac ILIKE ${searchPattern} OR d.vendor ILIKE ${searchPattern} OR a.alias ILIKE ${searchPattern}
+                ORDER BY d.created_at DESC
                 LIMIT ${limit} OFFSET ${offset};
             `;
             // Consulta de conteo total
             countQuery = sql`
-                SELECT COUNT(*) FROM detections 
-                WHERE mac ILIKE ${searchPattern} OR vendor ILIKE ${searchPattern};
+                SELECT COUNT(*) FROM detections d
+                LEFT JOIN mac_aliases a ON d.mac = a.mac
+                WHERE d.mac ILIKE ${searchPattern} OR d.vendor ILIKE ${searchPattern} OR a.alias ILIKE ${searchPattern};
             `;
         } else {
             // Sin búsqueda, solo paginación
             query = sql`
-                SELECT * FROM detections 
-                ORDER BY created_at DESC
+                SELECT d.*, a.alias 
+                FROM detections d
+                LEFT JOIN mac_aliases a ON d.mac = a.mac
+                ORDER BY d.created_at DESC
                 LIMIT ${limit} OFFSET ${offset};
             `;
             countQuery = sql`SELECT COUNT(*) FROM detections;`;

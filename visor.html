@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visor Temporal-Espacial v1.3 - Sniffer</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root {
+            --bg: #0f172a;
+            --panel: #1e293b;
+            --accent: #10b981;
+            /* Verde para visor temporal */
+            --text: #f8fafc;
+            --border: #334155;
+        }
+
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            background: var(--bg);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            color: var(--text);
+            overflow: hidden;
+        }
+
+        #map {
+            height: 100vh;
+            width: 100%;
+            z-index: 1;
+            transition: filter 3s ease;
+            /* Transición suave día/noche */
+        }
+
+        /* TIMELINE SUPERIOR */
+        .timeline-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(15, 23, 42, 0.9);
+            z-index: 1000;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(8px);
+        }
+
+        .timeline-slider {
+            width: 98%;
+            margin: 0 1%;
+            cursor: pointer;
+            accent-color: var(--accent);
+        }
+
+        .timeline-info {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 20px;
+            font-size: 0.8rem;
+            color: #94a3b8;
+            font-family: monospace;
+        }
+
+        .timeline-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin: 5px 0;
+        }
+
+        .timeline-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .timeline-btn:hover {
+            background: var(--accent);
+            color: var(--bg);
+            border-color: var(--accent);
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-left: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        #playSpeed {
+            width: 80px;
+            height: 4px;
+            accent-color: var(--accent);
+        }
+
+        /* PANEL DE CONTROL */
+        .control-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: var(--panel);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            width: 320px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        .panel-header {
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h2 {
+            margin: 0;
+            font-size: 1.1rem;
+            color: var(--accent);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        input,
+        select {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 10px;
+            padding-right: 35px;
+            border-radius: 6px;
+            color: white;
+            box-sizing: border-box;
+        }
+
+        .clear-btn {
+            position: absolute;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #64748b;
+            cursor: pointer;
+            font-size: 1.1rem;
+            display: none;
+            line-height: 1;
+        }
+
+        .clear-btn:hover {
+            color: #f8fafc;
+        }
+
+        .btn-main {
+            background: var(--accent);
+            color: var(--bg);
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            width: 100%;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-main:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+
+        /* INFO BOX FLOTANTE */
+        .data-overlay {
+            position: absolute;
+            top: 100px;
+            /* Bajado para no tapar el timeline */
+            right: 20px;
+            z-index: 1000;
+            background: rgba(30, 41, 59, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent);
+            font-size: 0.85rem;
+            width: 280px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            pointer-events: auto;
+        }
+
+        .data-item {
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .data-label {
+            color: #94a3b8;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+        }
+
+        .data-value {
+            font-weight: bold;
+            font-family: monospace;
+            text-align: right;
+        }
+
+        /* PACKET INSPECTOR IN VISOR */
+        .packet-box {
+            margin-top: 15px;
+            background: #0f172a;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            max-height: 180px;
+            overflow-y: auto;
+            border: 1px solid #334155;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2px;
+            color: #e2e8f0;
+            font-family: monospace;
+        }
+
+        .byte-box {
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 2px;
+            cursor: help;
+            font-size: 0.7rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Colores de Trama */
+        .c-rt {
+            background: #475569;
+        }
+
+        /* RadioTap */
+        .c-fc {
+            background: #1e40af;
+        }
+
+        /* Frame Control */
+        .c-dur {
+            background: #854d0e;
+        }
+
+        /* Duration */
+        .c-dest {
+            background: #991b1b;
+        }
+
+        /* Destination */
+        .c-src {
+            background: #065f46;
+        }
+
+        /* Source */
+        .c-bssid {
+            background: #1e3a8a;
+        }
+
+        /* BSSID */
+        .c-seq {
+            background: #6b21a8;
+        }
+
+        /* Sequence */
+        .c-ssid {
+            background: #064e3b;
+        }
+
+        /* SSID */
+        .c-ie {
+            background: #065f46;
+        }
+
+        /* IEs */
+        .c-vend {
+            background: #92400e;
+        }
+
+        /* Vendor */
+        .c-def {
+            background: #334155;
+        }
+
+        /* Default */
+
+        /* ICONO CELULAR */
+        .cell-icon {
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.6));
+            cursor: pointer;
+        }
+
+        /* ESTILOS MAPA */
+        .node-icon {
+            background: #38bdf8;
+            border: 2px solid white;
+            border-radius: 50%;
+        }
+
+        .target-marker {
+            transition: all 0.3s ease-out;
+        }
+
+        /* MODO NOCHE */
+        .night-mode {
+            filter: brightness(0.6) contrast(1.2) saturate(0.8) hue-rotate(10deg);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="timeline-container" id="timelineUI" style="display: none;">
+        <div id="timelineDays"
+            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; z-index: -1; pointer-events: none;">
+        </div>
+        <div id="timelineTicks"
+            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; opacity: 0.6;">
+        </div>
+        <input type="range" id="timeline" class="timeline-slider" min="0" value="0" step="1"
+            oninput="updateFrameFromSlider()">
+
+        <div class="timeline-info">
+            <span id="time-start">--:--:--</span>
+            <span id="time-current" style="color: var(--accent); font-weight: bold;">DESLIZA PARA NAVEGAR</span>
+            <span id="time-end">--:--:--</span>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <div class="data-overlay" id="dataOverlay" style="display: none;">
+        <div class="data-item">
+            <span class="data-label">Fecha</span>
+            <span id="valDate" class="data-value">--/--/--</span>
+        </div>
+        <div class="data-item">
+            <span class="data-label">Hora (Local AR)</span>
+            <span id="valTime" class="data-value">--:--:--</span>
+        </div>
+        <div class="data-item">
+            <span class="data-label">Nodo</span>
+            <span id="valNode" class="data-value">---</span>
+        </div>
+        <div class="data-item">
+            <span class="data-label">RSSI</span>
+            <span id="valRSSI" class="data-value">--- dBm</span>
+        </div>
+        <div class="data-label" style="margin-top:10px;">Contenido de la Trama (Raw)</div>
+        <div id="valRaw" class="packet-box">No hay datos</div>
+    </div>
+
+    <div class="control-panel">
+        <div class="panel-header">
+            <h2>RASTREO TEMPORAL</h2>
+            <button onclick="location.href='index.html'"
+                style="background:none; border:none; color:#64748b; cursor:pointer;"
+                title="Volver al Dashboard">🏠</button>
+        </div>
+
+        <div class="form-group">
+            <label>Entorno (Log-Normal Shadowing)</label>
+            <select id="selPathLoss">
+                <option value="2.0" selected>Espacio Libre (n=2.0) - S/Paredes</option>
+                <option value="3.0">Urbano (n=3.0) - Postes/Casas</option>
+                <option value="5.0">Interior (n=5.0) - Hormigón/Muebles</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Seleccionar MAC (Detección Multi-Nodo)</label>
+            <div class="input-wrapper">
+                <input type="text" id="macSearch" list="macList" placeholder="Escribe o selecciona MAC..."
+                    autocomplete="off">
+                <button id="btnClearMac" class="clear-btn" title="Limpiar selección">&times;</button>
+            </div>
+            <datalist id="macList"></datalist>
+        </div>
+
+        <div class="form-group"
+            style="display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px;">
+            <input type="checkbox" id="chkAutoCenter" checked style="width: 20px; height: 20px; margin: 0;">
+            <label for="chkAutoCenter" style="margin: 0; cursor: pointer;">Auto-centrar en objetivo</label>
+        </div>
+
+        <div class="form-group"
+            style="display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px; margin-top: 10px;">
+            <input type="checkbox" id="chkHeatmap" onchange="toggleHeatmap()"
+                style="width: 20px; height: 20px; margin: 0;">
+            <label for="chkHeatmap" style="margin: 0; cursor: pointer; color:#ef4444; font-weight:bold;">🔥 Mapa de
+                Calor</label>
+        </div>
+
+        <button id="btnRastrear" class="btn-main">OBTENER TRAYECTORIA</button>
+
+        <div id="playback-section"
+            style="margin-top:20px; border-top: 1px solid var(--border); padding-top:15px; display:none;">
+            <label
+                style="display:block; margin-bottom:10px; font-size:0.7rem; color:#94a3b8; text-transform:uppercase;">Control
+                de Reproducción</label>
+            <div class="timeline-controls" style="justify-content: space-between; margin-bottom:15px;">
+                <button id="btnPrev" class="timeline-btn" title="Evento Anterior">⏮</button>
+                <button id="btnPlay" class="timeline-btn" style="width: 60px; font-weight: bold;"
+                    title="Reproducir">▶</button>
+                <button id="btnNext" class="timeline-btn" title="Siguiente Evento">⏭</button>
+            </div>
+            <div class="speed-control" style="margin-left:0; width:100%; justify-content: space-between;">
+                <label>Velocidad:</label>
+                <input type="range" id="playSpeed" min="20" max="3600" step="20" value="20"
+                    style="flex:1; margin:0 10px;">
+                <span id="speedValue" style="min-width:40px; text-align:right;">20s</span>
+            </div>
+        </div>
+
+        <div id="status" style="margin-top: 15px; font-size: 0.8rem; color: #94a3b8; text-align: center;">
+            Selecciona un objetivo para iniciar
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+
+    <!-- GeoSmart Extensions -->
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+    <script src="https://unpkg.com/osmtogeojson@3.0.0/osmtogeojson.js"></script>
+
+    <script>
+        let map, ghostPath, activeMarker;
+        let nodesData = {};
+        let historyData = [];
+        let markers = {};
+
+        // --- GEO SMART SYSTEM ---
+        let urbanFeatures = null; // Store fetched vector data
+        let isGeoLoaded = false;
+
+        async function initGeoData() {
+            // Calculate center of known nodes to fetch area
+            const nodeKeys = Object.keys(nodesData);
+            if (nodeKeys.length === 0) return;
+
+            // CALCULATE SMART BBOX v1.8.3 (Fix applied)
+            // 1. Filter out invalid/rogue nodes (0,0) or outliers
+            const latVals = [];
+            const lngVals = [];
+            nodeKeys.forEach(k => {
+                const n = nodesData[k];
+                if (Math.abs(n.lat) > 0.1 && Math.abs(n.lng) > 0.1) {
+                    latVals.push(n.lat);
+                    lngVals.push(n.lng);
+                }
+            });
+
+            if (latVals.length === 0) return;
+
+            const minLat = Math.min(...latVals);
+            const maxLat = Math.max(...latVals);
+            const minLng = Math.min(...lngVals);
+            const maxLng = Math.max(...lngVals);
+
+            // Safety Clamp: Don't request more than 0.1 degrees
+            const centerLat = (minLat + maxLat) / 2;
+            const centerLng = (minLng + maxLng) / 2;
+
+            // Fixed 1km radius buffer approx (User request: 5km was too heavy)
+            const safeBuffer = 0.01;
+            const finalMinLat = Math.max(minLat, centerLat - safeBuffer);
+            const finalMaxLat = Math.min(maxLat, centerLat + safeBuffer);
+            const finalMinLng = Math.max(minLng, centerLng - safeBuffer);
+            const finalMaxLng = Math.min(maxLng, centerLng + safeBuffer);
+
+            // Build Overpass QL
+            // Uses Bounding Box: (south,west,north,east)
+            const bbox = `${finalMinLat},${finalMinLng},${finalMaxLat},${finalMaxLng}`;
+
+            console.log("Fetching Urban Geometry (Safe GET)...", bbox);
+            const query = `
+                [out:json][timeout:60];
+                (
+                  way["highway"](${bbox});
+                  way["leisure"="park"](${bbox});
+                  way["landuse"="recreation_ground"](${bbox});
+                  relation["leisure"="park"](${bbox});
+                );
+                out geom;
+            `;
+
+            try {
+                // Update specific status UI
+                const statusEl = document.getElementById('status');
+                statusEl.innerHTML = `<span>Cargando geometría urbana... (Overpass API) ⏳</span>`;
+
+                // Use GET method with encoded query to avoid CORS preflight issues sometimes
+                const url = 'https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(query);
+
+                const res = await fetch(url);
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status} ${res.statusText}`);
+                }
+
+                const osmData = await res.json();
+                urbanFeatures = osmtogeojson(osmData);
+                isGeoLoaded = true;
+
+                const count = urbanFeatures.features.length;
+                console.log(`GEODATA LOADED: ${count} features found.`);
+                statusEl.innerHTML = `<span style="color:#10b981">Geometría Urbana: ${count} elementos cargados 🏙️</span>`;
+
+                // DATA ARRIVED LATE? REFRESH HEATMAP NOW
+                if (historyData.length > 0) {
+                    console.log("Refreshing Heatmap with new GeoData...");
+                    updateHeatmap();
+                }
+
+            } catch (e) {
+                console.error("GeoFetch Error:", e);
+                const msg = e.message || e.toString();
+                document.getElementById('status').innerHTML = `<span style='color:#ef4444'>⚠️ Error Mapa Vectorial: ${msg}</span>`;
+            }
+        }
+
+        // Configuración inicial del mapa
+        function initMap() {
+            map = L.map('map', { zoomControl: false }).setView([-34.3382, -56.7055], 14);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap'
+            }).addTo(map);
+
+            ghostPath = L.polyline([], {
+                color: '#10b981',
+                weight: 2,
+                dashArray: '5, 10',
+                opacity: 0.5
+            }).addTo(map);
+        }
+
+        // Cargar nodos
+        async function loadNodes() {
+            try {
+                const res = await fetch('/api/nodes');
+                const nodes = await res.json();
+                nodes.forEach(n => {
+                    nodesData[n.id] = n;
+                    L.circleMarker([n.lat, n.lng], {
+                        radius: 8,
+                        color: '#38bdf8',
+                        fillOpacity: 0.8
+                    }).addTo(map).bindTooltip(`NODO: ${n.id}`);
+                });
+            } catch (e) { console.error("Error cargando nodos:", e); }
+        }
+
+        // Cargar lista de MACs para el dropdown
+        async function loadMacSuggestions() {
+            try {
+                const res = await fetch('/api/macs');
+                const macs = await res.json();
+                const list = document.getElementById('macList');
+                list.innerHTML = "";
+
+                // Filtrar solo MACs vistas por 2 o más nodos
+                const filteredMacs = macs.filter(m => m.node_count >= 2);
+
+                filteredMacs.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.mac;
+                    // Mostrar info de fabricante y cantidad de nodos
+                    opt.innerText = `${m.vendor || 'Desconocido'} [${m.node_count} nodos]`;
+                    list.appendChild(opt);
+                });
+
+                if (filteredMacs.length === 0) {
+                    const opt = document.createElement('option');
+                    opt.value = "";
+                    opt.innerText = "No hay MACs con triangulación";
+                    opt.disabled = true;
+                    list.appendChild(opt);
+                }
+            } catch (e) { console.error("Error cargando MACs:", e); }
+        }
+
+        // Lógica de desplazamiento por RSSI (Offset)
+        // Cuanto más débil la señal (ej: -90), más lejos del centro del nodo
+        // SMART POSITIONING v1.8
+        // Uses Turf.js to intersect signal radius with real street geometry.
+        function getOffsetPosition(baseLat, baseLng, rssi, index) {
+
+            // 1. Calculate Est. Distance based on RSSI & Env Model
+            const envN = parseFloat(document.getElementById('selPathLoss').value) || 2.5;
+            // Dist formula: d = 10 ^ (( -40 - rssi ) / (10 * n))
+            const rawDistMeters = Math.pow(10, ((-40 - rssi) / (10 * envN)));
+            // Clamp min/max for sanity (e.g. min 5m, max 400m)
+            const distMeters = Math.max(5, Math.min(rawDistMeters, 400));
+
+            // If no geo data, fallback to old radial math
+            if (!isGeoLoaded || !urbanFeatures) {
+                // FALLBACK MODE
+                // console.log("Using Fallback Radial (No GeoData)"); 
+                const angle = (index * 137.5) % 360;
+                // Convert meters to lat/lng degrees (approx)
+                // 1 deg lat ~ 111km -> 1m ~ 0.000009 deg
+                const rDeg = distMeters * 0.000009;
+                return [
+                    baseLat + rDeg * Math.cos(angle * Math.PI / 180),
+                    baseLng + rDeg * Math.sin(angle * Math.PI / 180)
+                ];
+            }
+
+            // TURF.JS LOGIC
+            // console.log("Calculating Smart Position...");
+            try {
+                const center = turf.point([baseLng, baseLat]); // turf uses [lng, lat]
+                const radiusKm = distMeters / 1000;
+
+                // Create the "Signal Circle"
+                const circle = turf.circle(center, radiusKm, { steps: 64, units: 'kilometers' });
+
+                // We need to intersect the Circle's LINE (perimeter) with streets
+                // turf.polygonToLine converts circle polygon to lineString
+                const circleLine = turf.polygonToLine(circle);
+
+                let candidates = [];
+
+                // Filter relevant features near the node to optimize loop?
+                // For now, iterate all (client-side perf might vary, usually fine for small towns)
+
+                // Using turf.bboxClip could optimize but let's try direct intersection first
+                // Actually, rbush index would be best but simple loop is O(N)
+
+                for (const f of urbanFeatures.features) {
+                    if (!f.geometry) continue;
+
+                    // Check if street/path
+                    if (f.geometry.type === 'LineString' && (f.properties.highway)) {
+                        // Check bounding box first to avoid expensive intersect?
+                        // Turf doesn't always expose efficient bounds check easily without bbox() step
+                        // Let's rely on lineIntersect speed.
+
+                        const intersects = turf.lineIntersect(circleLine, f);
+                        if (intersects.features.length > 0) {
+                            intersects.features.forEach(pt => {
+                                // turf returns [lng, lat]
+                                candidates.push([pt.geometry.coordinates[1], pt.geometry.coordinates[0]]);
+                            });
+                        }
+                    }
+                    // TODO: Logic for Parks (Polygon intersection) could go here
+                    // But strictly user asked for "streets, parks, etc".
+                    // For parks (Polygons), user said "any segment of arc contained". 
+                    // turf.lineSplit or turf.booleanIntersects.
+                }
+
+                if (candidates.length > 0) {
+                    // Return a random candidate (to show uncertainty/spread along streets)
+                    // If we want "deterministic" randomness (stable per playback), we could seed with index/rssi
+                    const pickIdx = (index + Math.abs(rssi)) % candidates.length;
+                    return candidates[pickIdx];
+                }
+
+                // If NO intersection (building block interior), find Nearest Point on Street
+                // This "snaps" to the closest street even if ring doesn't touch it.
+                // Or fallback to radial? 
+                // User requirement: "discard areas of buildings". Nearest Point on Street is safer.
+
+                // Optimization: Find closest street first? Expensive loop.
+                // Fallback to radial if no intersection found to avoid freeze.
+                const angle = (index * 137.5) % 360;
+                const rDeg = distMeters * 0.000009;
+                return [
+                    baseLat + rDeg * Math.cos(angle * Math.PI / 180),
+                    baseLng + rDeg * Math.sin(angle * Math.PI / 180)
+                ];
+
+            } catch (e) {
+                console.error("Turf Error", e);
+                return [baseLat, baseLng];
+            }
+        }
+
+        // Formatear hora (Local Argentina / 24h)
+        function formatTimeCorr(isoStr) {
+            const date = new Date(isoStr);
+            return date.toLocaleTimeString('es-AR', {
+                timeZone: 'America/Argentina/Buenos_Aires',
+                hour12: false
+            });
+        }
+
+        // Formatear fecha (Local Argentina)
+        function formatDateCorr(isoStr) {
+            const date = new Date(isoStr);
+            return date.toLocaleDateString('es-AR', {
+                timeZone: 'America/Argentina/Buenos_Aires'
+            });
+        }
+
+        // Generar color único por día
+        function getDayColor(isoStr) {
+            const date = new Date(isoStr);
+            const colors = ['#10b981', '#38bdf8', '#fbbf24', '#f87171', '#a855f7', '#f472b6', '#fb923c'];
+            return colors[date.getDate() % colors.length];
+        }
+
+        let clusteredData = [];
+        let axisNodes = []; // Usado para fallback si no hay secuencia clara
+        let nodeSequence = []; // [nodeId, nodeId, ...] secuencial
+
+        // Playback v1.4.1
+        let isPlaying = false;
+        let playTimer = null;
+
+        // Rastrear MAC
+        async function rastrear() {
+            const mac = document.getElementById('macSearch').value.trim();
+            if (!mac) return;
+
+            document.getElementById('status').innerText = "Buscando historial...";
+
+            try {
+                const res = await fetch(`/api/history?mac=${mac}`);
+                historyData = await res.json();
+
+                if (historyData.length === 0) {
+                    document.getElementById('status').innerText = "Sin registros para esta MAC";
+                    return;
+                }
+
+                // --- IDENTIFICAR SECUENCIA DE NODOS VISITADOS ---
+                nodeSequence = [];
+                historyData.forEach(d => {
+                    if (nodeSequence[nodeSequence.length - 1] !== d.nodo) {
+                        nodeSequence.push(d.nodo);
+                    }
+                });
+
+                // --- IDENTIFICAR EJE DOMINANTE (Fallback) ---
+                const nodeCounts = {};
+                historyData.forEach(d => nodeCounts[d.nodo] = (nodeCounts[d.nodo] || 0) + 1);
+                axisNodes = Object.entries(nodeCounts)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 2)
+                    .map(e => e[0]);
+
+                // --- ALGORITMO DE AGRUPAMIENTO (CLUSTERING) ---
+                clusteredData = [];
+                if (historyData.length > 0) {
+                    let currentCluster = [historyData[0]];
+
+                    for (let i = 1; i < historyData.length; i++) {
+                        const prevTime = new Date(historyData[i - 1].created_at).getTime();
+                        const currTime = new Date(historyData[i].created_at).getTime();
+
+                        if (currTime - prevTime < 10000) {
+                            currentCluster.push(historyData[i]);
+                        } else {
+                            const cluster = processCluster(currentCluster);
+                            if (cluster) clusteredData.push(cluster);
+                            currentCluster = [historyData[i]];
+                        }
+                    }
+                    const lastCluster = processCluster(currentCluster);
+                    if (lastCluster) clusteredData.push(lastCluster);
+                }
+
+                if (clusteredData.length === 0) {
+                    document.getElementById('status').innerText = "Vistas en nodos no registrados";
+                    return;
+                }
+
+                const startTime = new Date(clusteredData[0].timestamp).getTime();
+                const endTime = new Date(clusteredData[clusteredData.length - 1].timestamp).getTime();
+
+                // Configurar Slider Temporal Real
+                const slider = document.getElementById('timeline');
+                slider.min = startTime;
+                slider.max = endTime;
+                slider.value = startTime;
+
+                renderTimelineSegments(startTime, endTime);
+
+                document.getElementById('status').innerText = `${clusteredData.length} eventos en ${Math.round((endTime - startTime) / 60000)} min`;
+                document.getElementById('timelineUI').style.display = 'block';
+                document.getElementById('dataOverlay').style.display = 'block';
+                const pbSection = document.getElementById('playback-section');
+                if (pbSection) pbSection.style.display = 'block';
+
+                document.getElementById('time-start').innerText = formatTimeCorr(startTime);
+                document.getElementById('time-end').innerText = formatTimeCorr(endTime);
+
+                // Dibujar Ghost Path
+                const pathCoords = nodeSequence.map(id => {
+                    const n = nodesData[id];
+                    return n ? [n.lat, n.lng] : null;
+                }).filter(p => p !== null);
+                ghostPath.setLatLngs(pathCoords);
+
+                // Posicionar al inicio
+                updateFrame(startTime);
+
+                // Update Heatmap if enabled
+                updateHeatmap();
+
+            } catch (e) {
+                console.error(e);
+                document.getElementById('status').innerText = "Error al obtener datos";
+            }
+        }
+
+        // Renderizar línea de tiempo cronológica con marcas de actividad
+        function renderTimelineSegments(startTime, endTime) {
+            const daysContainer = document.getElementById('timelineDays');
+            const ticksContainer = document.getElementById('timelineTicks');
+            daysContainer.innerHTML = "";
+            ticksContainer.innerHTML = "";
+
+            const totalDuration = endTime - startTime || 1;
+
+            // Dibujar Bloques de Días
+            let tempTime = new Date(startTime);
+            tempTime.setHours(0, 0, 0, 0);
+
+            while (tempTime.getTime() < endTime) {
+                const dayStart = Math.max(startTime, tempTime.getTime());
+                const nextDay = new Date(tempTime);
+                nextDay.setDate(nextDay.getDate() + 1);
+                const dayEnd = Math.min(endTime, nextDay.getTime());
+
+                const widthPct = ((dayEnd - dayStart) / totalDuration) * 100;
+                if (widthPct > 0) {
+                    const div = document.createElement('div');
+                    div.style.width = widthPct + "%";
+                    div.style.background = "rgba(255,255,255,0.05)";
+                    div.style.opacity = "0.2";
+                    div.style.borderRight = "1px solid rgba(255,255,255,0.1)";
+                    div.style.display = "flex";
+                    div.style.alignItems = "center";
+                    div.style.justifyContent = "center";
+                    div.style.fontSize = "0.65rem";
+                    div.style.color = "white";
+                    div.innerText = tempTime.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric' });
+                    daysContainer.appendChild(div);
+                }
+                tempTime = nextDay;
+            }
+
+            // Dibujar Ticks de Actividad
+            clusteredData.forEach(c => {
+                const posPct = ((new Date(c.timestamp).getTime() - startTime) / totalDuration) * 100;
+                const tick = document.createElement('div');
+                tick.style.position = "absolute";
+                tick.style.left = posPct + "%";
+                tick.style.width = "2px";
+                tick.style.height = "10px";
+                tick.style.background = "var(--accent)";
+                tick.style.top = "50%";
+                tick.style.transform = "translateY(-50%)";
+                ticksContainer.appendChild(tick);
+            });
+        }
+
+        function updateFrameFromSlider() {
+            const timestamp = parseInt(document.getElementById('timeline').value);
+            document.getElementById('time-current').innerText = formatTimeCorr(timestamp);
+            updateMapTheme(timestamp);
+            updateFrame(timestamp);
+        }
+
+        // --- LÓGICA DE REPRODUCCIÓN v1.4.1 ---
+        function togglePlayback() {
+            if (isPlaying) {
+                pausePlayback();
+            } else {
+                startPlayback();
+            }
+        }
+
+        function startPlayback() {
+            if (clusteredData.length === 0) return;
+            isPlaying = true;
+            document.getElementById('btnPlay').innerText = "⏸";
+            document.getElementById('btnPlay').title = "Pausar";
+
+            playTimer = setInterval(() => {
+                const slider = document.getElementById('timeline');
+                const stepSeconds = parseInt(document.getElementById('playSpeed').value) || 1;
+                const nextVal = parseInt(slider.value) + (stepSeconds * 1000);
+
+                if (nextVal >= parseInt(slider.max)) {
+                    slider.value = slider.max;
+                    updateFrameFromSlider();
+                    pausePlayback();
+                } else {
+                    slider.value = nextVal;
+                    updateFrameFromSlider();
+                }
+            }, 1000); // Salto cada 1 segundo real
+        }
+
+        function pausePlayback() {
+            isPlaying = false;
+            clearInterval(playTimer);
+            document.getElementById('btnPlay').innerText = "▶";
+            document.getElementById('btnPlay').title = "Reproducir";
+        }
+
+        function nextEvent() {
+            const currentT = parseInt(document.getElementById('timeline').value);
+            // Buscar el primer punto que esté al menos 1 segundo después del actual
+            const next = clusteredData.find(c => new Date(c.timestamp).getTime() > currentT + 1000);
+            if (next) {
+                const nextT = new Date(next.timestamp).getTime();
+                document.getElementById('timeline').value = nextT;
+                updateFrameFromSlider();
+            }
+        }
+
+        function prevEvent() {
+            const currentT = parseInt(document.getElementById('timeline').value);
+            // Buscar el último punto que esté al menos 1 segundo antes del actual
+            const prev = [...clusteredData].reverse().find(c => new Date(c.timestamp).getTime() < currentT - 1000);
+            if (prev) {
+                const prevT = new Date(prev.timestamp).getTime();
+                document.getElementById('timeline').value = prevT;
+                updateFrameFromSlider();
+            }
+        }
+
+        function updateMapTheme(time) {
+            const date = new Date(time);
+            const hour = date.getHours();
+            const minutes = date.getMinutes();
+            const mapEl = document.getElementById('map');
+
+            // Cálculo más fino para transiciones (Opcional, pero mantengámoslo simple por ahora)
+            // 20:00 a 06:00 es noche
+            if (hour >= 20 || hour <= 6) {
+                mapEl.classList.add('night-mode');
+            } else {
+                mapEl.classList.remove('night-mode');
+            }
+        }
+
+        const getDistMeters = (rssi, n) => Math.pow(10, ((-40 - rssi) / (10 * n)));
+
+        // Lógica de Modelo Log-Normal Shadowing
+        function processCluster(cluster) {
+            if (cluster.length === 0) return null;
+
+            const sorted = cluster.sort((a, b) => b.rssi - a.rssi);
+            const best = sorted[0];
+            const bestNode = nodesData[best.nodo];
+            if (!bestNode) return null;
+
+            const n = parseFloat(document.getElementById('selPathLoss').value) || 2.0;
+
+            let finalPos = [bestNode.lat, bestNode.lng];
+            let displayNode = best.nodo;
+
+            if (cluster.length >= 2 && sorted[0].nodo !== sorted[1].nodo) {
+                // CASO MULTI-NODO: Interpolación entre los dos mejores
+                const second = sorted[1];
+                const secondNode = nodesData[second.nodo];
+                if (secondNode) {
+                    const d1 = getDistMeters(best.rssi, n);
+                    const d2 = getDistMeters(second.rssi, n);
+                    const ratio = d1 / (d1 + d2);
+                    finalPos = [
+                        bestNode.lat + ratio * (secondNode.lat - bestNode.lat),
+                        bestNode.lng + ratio * (secondNode.lng - bestNode.lng)
+                    ];
+                    displayNode = `${best.nodo} ↔ ${second.nodo}`;
+                }
+            } else {
+                // CASO NODO ÚNICO: Usamos el eje secuencial (Node-to-Node Riel)
+                let seqIdx = nodeSequence.indexOf(best.nodo);
+                let nextNodeId = nodeSequence[seqIdx + 1] || nodeSequence[seqIdx - 1] || axisNodes.find(id => id !== best.nodo);
+
+                if (nextNodeId && nodesData[nextNodeId]) {
+                    const otherNode = nodesData[nextNodeId];
+                    const d = getDistMeters(best.rssi, n);
+                    let ratio = Math.min(0.8, d / 50);
+                    finalPos = [
+                        bestNode.lat + ratio * (otherNode.lat - bestNode.lat),
+                        bestNode.lng + ratio * (otherNode.lng - bestNode.lng)
+                    ];
+                    displayNode = `${best.nodo} (Hacia ${nextNodeId})`;
+                }
+            }
+
+            return {
+                pos: finalPos,
+                timestamp: best.created_at,
+                nodo: displayNode + (cluster.length > 1 ? ` (+${cluster.length - 1})` : ""),
+                rssi: best.rssi,
+                originalNode: best.nodo,
+                raw: best.raw_packet || best.fingerprint,
+                multi: cluster.length > 1
+            };
+        }
+
+        function updateFrame(timestamp) {
+            // Encontrar el punto más cercano en el tiempo
+            let bestPoint = clusteredData[0];
+            let minDiff = Math.abs(new Date(bestPoint.timestamp).getTime() - timestamp);
+
+            for (let i = 1; i < clusteredData.length; i++) {
+                const diff = Math.abs(new Date(clusteredData[i].timestamp).getTime() - timestamp);
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    bestPoint = clusteredData[i];
+                }
+            }
+
+            const point = bestPoint;
+            if (!point) return;
+
+            const pos = point.pos;
+            updateMapTheme(point.timestamp);
+
+            // Icono de celular
+            const mobileIcon = L.divIcon({
+                html: '📱',
+                className: 'cell-icon',
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
+
+            if (!activeMarker) {
+                activeMarker = L.marker(pos, {
+                    icon: mobileIcon,
+                    zIndexOffset: 1000
+                }).addTo(map);
+            } else {
+                activeMarker.setLatLng(pos);
+            }
+
+            // Color por día
+            // Color por día - ELIMINADO v1.4.3
+            // const dayColor = getDayColor(point.timestamp);
+            // document.documentElement.style.setProperty('--accent', dayColor);
+
+
+            // Actualizar Overlay
+            document.getElementById('valDate').innerText = formatDateCorr(point.timestamp);
+            document.getElementById('valTime').innerText = formatTimeCorr(point.timestamp);
+            document.getElementById('valNode').innerText = point.nodo;
+            document.getElementById('valRSSI').innerText = `${point.rssi} dBm`;
+
+            renderHex(point.raw);
+
+            // No sobreescribimos time-current aquí para que el slider mande
+            // document.getElementById('time-current').innerText = formatTimeCorr(point.timestamp);
+
+            if (document.getElementById('chkAutoCenter').checked) {
+                map.panTo(pos);
+            }
+        }
+
+        function renderHex(hex) {
+            const display = document.getElementById('valRaw');
+            display.innerHTML = "";
+            if (!hex || hex.length < 4) {
+                display.innerText = "Sin datos de trama";
+                return;
+            }
+
+            for (let i = 0; i < hex.length; i += 2) {
+                const byteHex = hex.substring(i, i + 2);
+                const byteIdx = i / 2;
+                const span = document.createElement('span');
+                span.className = 'byte-box';
+                span.innerText = byteHex;
+
+                let label = "Byte " + byteIdx;
+                let colorClass = "c-def";
+                const isFullPacket = (hex.length > 20);
+                let offset = byteIdx;
+
+                if (isFullPacket && hex.length > 40) {
+                    if (offset < 12) { colorClass = "c-rt"; label = "RadioTap / Meta Header"; }
+                    else if (offset < 14) { colorClass = "c-fc"; label = "Frame Control (802.11)"; }
+                    else if (offset < 16) { colorClass = "c-dur"; label = "Duration / ID"; }
+                    else if (offset < 22) { colorClass = "c-dest"; label = "Destination MAC"; }
+                    else if (offset < 28) { colorClass = "c-src"; label = "Source MAC"; }
+                    else if (offset < 34) { colorClass = "c-bssid"; label = "BSSID"; }
+                    else if (offset < 36) { colorClass = "c-seq"; label = "Sequence Control"; }
+                    else {
+                        if (byteHex === "00") { colorClass = "c-ssid"; label = "IE Tag (SSID)"; }
+                        else if (byteHex === "DD") { colorClass = "c-vend"; label = "Vendor Specific Tag"; }
+                        else { colorClass = "c-ie"; label = "Information Element Data"; }
+                    }
+                } else {
+                    if (offset < 2) { colorClass = "c-fc"; label = "Frame Control"; }
+                    else if (offset < 4) { colorClass = "c-dur"; label = "Duration"; }
+                    else if (offset < 6) { colorClass = "c-seq"; label = "Sequence Control"; }
+                    else { colorClass = "c-ie"; label = "Data"; }
+                }
+
+                span.classList.add(colorClass);
+                span.title = label;
+                display.appendChild(span);
+            }
+        }
+
+        // Eventos
+        document.getElementById('btnRastrear').addEventListener('click', rastrear);
+
+        // Controles de Reproducción v1.4.1
+        document.getElementById('btnPlay').addEventListener('click', togglePlayback);
+        document.getElementById('btnNext').addEventListener('click', nextEvent);
+        document.getElementById('btnPrev').addEventListener('click', prevEvent);
+
+        document.getElementById('playSpeed').addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            let display = val + "s";
+            if (val >= 60) {
+                display = Math.round(val / 60) + "m";
+            }
+            document.getElementById('speedValue').innerText = display;
+            if (isPlaying) {
+                pausePlayback();
+                startPlayback();
+            }
+        });
+
+        // UX: Limpiar al ganar foco para mostrar datalist completo
+        const searchInput = document.getElementById('macSearch');
+        const clearBtn = document.getElementById('btnClearMac');
+
+        searchInput.addEventListener('focus', () => {
+            if (searchInput.value) {
+                searchInput.value = '';
+                clearBtn.style.display = 'none';
+            }
+        });
+
+        searchInput.addEventListener('input', () => {
+            clearBtn.style.display = searchInput.value ? 'block' : 'none';
+        });
+
+        clearBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            clearBtn.style.display = 'none';
+            searchInput.focus();
+        });
+
+        // --- HEATMAP LOGIC ---
+        let heatmapLayer = null;
+
+        function toggleHeatmap() {
+            updateHeatmap();
+        }
+
+        function updateHeatmap() {
+            const checkbox = document.getElementById('chkHeatmap');
+            if (!checkbox || !checkbox.checked) {
+                if (heatmapLayer) {
+                    map.removeLayer(heatmapLayer);
+                    heatmapLayer = null;
+                }
+                return;
+            }
+
+            if (!historyData || historyData.length === 0) return;
+
+            const points = [];
+            historyData.forEach((d, idx) => {
+                const node = nodesData[d.nodo];
+                if (node) {
+                    // Use getOffsetPosition to distribute points around the node based on RSSI
+                    // This creates a natural "cloud" of heat
+                    const pos = getOffsetPosition(node.lat, node.lng, d.rssi, idx);
+                    points.push(pos);
+                }
+            });
+
+            if (heatmapLayer) {
+                heatmapLayer.setLatLngs(points);
+            } else {
+                heatmapLayer = L.heatLayer(points, { radius: 25, blur: 15, maxZoom: 17 }).addTo(map);
+            }
+        }
+
+        // Init
+        window.onload = () => {
+            initMap();
+            loadNodes();
+            loadMacSuggestions();
+
+            // Check URL Params
+            const urlParams = new URLSearchParams(window.location.search);
+            const macParam = urlParams.get('mac');
+            if (macParam) {
+                document.getElementById('macSearch').value = macParam;
+                // Wait small delay for nodes to load then trigger
+                setTimeout(rastrear, 500);
+            }
+        };
+    </script>
+</body>
+
+</html>

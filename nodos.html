@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Panel de Control de Nodos - Snifer</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --panel: #1e293b;
+            --text: #f8fafc;
+            --accent: #38bdf8;
+            --border: #334155;
+            --hover: #2d3a4f;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: var(--accent);
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        /* TABLA PRINCIPAL */
+        .nodes-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--panel);
+            border-radius: 8px;
+            /* overflow: hidden; Removed to allow sticky headers */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .nodes-table th,
+        .nodes-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .nodes-table th {
+            background: #334155;
+            color: var(--accent);
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.05em;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .node-row {
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .node-row:hover {
+            background: var(--hover);
+        }
+
+        .node-row.active {
+            background: #334155;
+            border-left: 4px solid var(--accent);
+        }
+
+        /* STATUS BADGES */
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-online {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid #10b981;
+        }
+
+        .status-offline {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+
+        /* ACCORDION / DETAILS */
+        .details-row {
+            display: none;
+            background: #151e2e;
+        }
+
+        .details-content {
+            padding: 20px;
+            border-left: 2px solid var(--border);
+        }
+
+        .sub-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+
+        .sub-table th {
+            background: #1e293b;
+            color: #94a3b8;
+            padding: 8px;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 50px;
+            /* Offset to clear main table header */
+            z-index: 5;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .sub-table td {
+            padding: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn-page {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .btn-page:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .stat-time {
+            font-size: 0.75em;
+            color: #94a3b8;
+            display: block;
+        }
+
+        .stat-time {
+            font-size: 0.75em;
+            color: #94a3b8;
+            display: block;
+        }
+
+        /* v1.7.0 Charts & Aliases */
+        .edit-icon {
+            cursor: pointer;
+            margin-left: 8px;
+            opacity: 0.6;
+            transition: 0.2s;
+            font-size: 0.9em;
+        }
+
+        .edit-icon:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .chart-bar.day {
+            background: #3b82f6;
+            margin: 0 1px;
+        }
+
+        .chart-bar.day:hover {
+            background: #60a5fa;
+            cursor: pointer;
+        }
+
+        .chart-bar.day.active {
+            background: #f59e0b;
+            border: 1px solid white;
+        }
+
+        .chart-grid {
+            position: absolute;
+            left: 0;
+            right: 0;
+            border-top: 1px dashed rgba(255, 255, 255, 0.1);
+            pointer-events: none;
+        }
+
+        /* MODALS */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--panel);
+            width: 90%;
+            max-width: 800px;
+            max-height: 90%;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-header {
+            padding: 15px 20px;
+            background: #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-body {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: #cbd5e1;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* PROFILE SPECIFIC */
+        .profile-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .profile-card {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .chart-bar-container {
+            display: flex;
+            align-items: flex-end;
+            height: 100px;
+            gap: 2px;
+            margin-top: 10px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 5px;
+        }
+
+        .chart-bar {
+            flex: 1;
+            background: var(--accent);
+            opacity: 0.7;
+            border-radius: 2px 2px 0 0;
+            transition: height 0.3s;
+            position: relative;
+        }
+
+        .chart-bar:hover {
+            opacity: 1;
+            background: #fff;
+        }
+
+        .chart-bar:hover::after {
+            content: attr(data-val);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #000;
+            color: #fff;
+            padding: 2px 4px;
+            font-size: 0.6rem;
+            border-radius: 4px;
+            white-space: nowrap;
+            z-index: 10;
+        }
+
+        .hour-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.6rem;
+            color: #64748b;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <div>
+                <h1>🎛️ Panel de Control de Nodos</h1>
+                <div style="font-size: 0.9rem; color: #94a3b8; margin-top:5px;">Supervisión y auditoría de sensores
+                    desplegados</div>
+            </div>
+            <div>
+                <button onclick="window.location.href='index.html'"
+                    style="background:none; border:1px solid var(--border); color:var(--text); padding:8px 12px; border-radius:6px; cursor:pointer;">
+                    🏠 Volver al Dashboard
+                </button>
+            </div>
+        </header>
+
+        <div id="loading" style="text-align:center; padding:40px;">Cargando estadísticas de nodos...</div>
+
+        <table class="nodes-table" id="nodesTable" style="display:none;">
+            <thead>
+                <tr>
+                    <th>Nodo</th>
+                    <th>Estado</th>
+                    <th>Total Capturas</th>
+                    <th>Diario (24h)</th>
+                    <th>Última Hora</th>
+                    <th>Pico Máximo (Hora)</th>
+                </tr>
+            </thead>
+            <tbody id="nodesBody">
+                <!-- Rows injected mainly -->
+            </tbody>
+        </table>
+
+        <!-- MAC PROFILE MODAL -->
+        <div id="profileModal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h3 style="margin:0; color:var(--accent); display:flex; align-items:center;" id="pmMac">
+                            MAC: --- <span class="edit-icon" title="Editar Alias"
+                                onclick="editAlias('mac', currentProfileMac)">✏️</span>
+                        </h3>
+                        <div style="font-size:0.8rem; color:#94a3b8; display:flex; align-items:center;" id="pmVendor">
+                            Fabricante: ---
+                        </div>
+                    </div>
+                    <button class="modal-close" onclick="closeModals()">×</button>
+                </div>
+                <div class="modal-body">
+
+                    <div style="display:flex; justify-content:space-between; margin-bottom:20px; text-align:center;">
+                        <div class="profile-card" style="flex:1; margin-right:10px;">
+                            <div style="font-size:0.8rem; color:#94a3b8;">Primera Vez</div>
+                            <strong id="pmFirst" style="color:#10b981;">---</strong>
+                        </div>
+                        <div class="profile-card" style="flex:1; margin-right:10px;">
+                            <div style="font-size:0.8rem; color:#94a3b8;">Última Vez</div>
+                            <strong id="pmLast" style="color:#f59e0b;">---</strong>
+                        </div>
+                        <div class="profile-card" style="flex:1;">
+                            <div style="font-size:0.8rem; color:#94a3b8;">Total Detecciones</div>
+                            <strong id="pmTotal" style="color:#38bdf8; font-size:1.2rem;">0</strong>
+                        </div>
+                    </div>
+
+                    <div class="profile-card" style="margin-bottom:20px;">
+                        <h4 style="margin:0 0 10px 0; font-size:0.9rem; color:#cbd5e1;">📅 Actividad Diaria (Últimos 30
+                            días)</h4>
+                        <div class="chart-bar-container" id="dailyChart" style="height:80px; align-items:flex-end;">
+                        </div>
+                        <div style="text-align:center; font-size:0.75rem; color:#64748b; margin-top:5px;">Clic en una
+                            barra para ver detalle por hora</div>
+                    </div>
+
+                    <div class="profile-grid">
+                        <div class="profile-card">
+                            <h4 style="margin:0 0 10px 0; font-size:0.9rem; color:#cbd5e1;">📊 Rutina Horaria <span
+                                    id="hourlyLabel"
+                                    style="font-weight:normal; font-size:0.8rem; color:#64748b;">(Promedio
+                                    Global)</span></h4>
+                            <div class="chart-bar-container" id="hourlyChart" style="position:relative;"></div>
+                            <div class="hour-labels">
+                                <span>00h</span><span>06h</span><span>12h</span><span>18h</span><span>23h</span>
+                            </div>
+                        </div>
+
+                        <div class="profile-card">
+                            <h4 style="margin:0 0 10px 0; font-size:0.9rem; color:#cbd5e1;">📍 Top Ubicaciones</h4>
+                            <table class="sub-table" style="font-size:0.85rem;">
+                                <thead>
+                                    <tr>
+                                        <th>Nodo</th>
+                                        <th>Cant.</th>
+                                        <th>Últ. Vez</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="topNodesBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:20px; text-align:right;">
+                        <button class="btn-page" onclick="window.open(`visor.html?mac=${currentProfileMac}`, '_blank')"
+                            style="background:#10b981; color:black; border:none; font-weight:bold;">🛰️ Rastrear
+                            Trayectoria</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        async function loadNodes() {
+            try {
+                const res = await fetch('/api/nodes_stats');
+                const nodes = await res.json();
+                renderNodes(nodes);
+            } catch (e) {
+                console.error(e);
+                document.getElementById('loading').innerText = "Error cargando nodos.";
+            }
+        }
+
+        function renderNodes(nodes) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('nodesTable').style.display = 'table';
+            const tbody = document.getElementById('nodesBody');
+            tbody.innerHTML = '';
+
+            nodes.forEach(node => {
+                // Main Row
+                const tr = document.createElement('tr');
+                tr.className = 'node-row';
+                tr.onclick = () => toggleDetails(node.id, tr);
+
+                // Stats Formatting
+                const maxTime = node.stats.max.timestamp ? new Date(node.stats.max.timestamp).toLocaleString() : '-';
+
+                tr.innerHTML = `
+                    <td>
+                        <strong style="color:var(--accent); font-size:1.1rem;">${node.id}</strong> 
+                        <span class="edit-icon" onclick="editAlias('node', '${node.id}', event)">✏️</span>
+                        <div style="font-size:0.8em; color:#64748b;">${node.alias || `${node.lat.toFixed(5)}, ${node.lng.toFixed(5)}`}</div>
+                    </td>
+                    <td>
+                        <span class="status-badge ${node.status === 'online' ? 'status-online' : 'status-offline'}">
+                            ${node.status.toUpperCase()}
+                        </span>
+                        ${node.last_seen ? `<div class="stat-time">Visto: ${new Date(node.last_seen).toLocaleTimeString()}</div>` : ''}
+                    </td>
+                    <td><span class="stat-value">${node.stats.total}</span></td>
+                    <td><span class="stat-value">${node.stats.daily}</span></td>
+                    <td><span class="stat-value">${node.stats.last_hour}</span></td>
+                    <td>
+                        <span class="stat-value">${node.stats.max.value}</span>
+                        <span class="stat-time">${maxTime}</span>
+                    </td>
+                `;
+
+                // Details Row (Hidden)
+                const trDetails = document.createElement('tr');
+                trDetails.className = 'details-row';
+                trDetails.id = `details-${node.id}`;
+                trDetails.innerHTML = `
+                    <td colspan="6" style="padding:0;">
+                        <div class="details-content">
+                            <h3 style="margin-top:0; color:var(--accent);">📊 Datos Capturados: ${node.id}</h3>
+                            <table class="sub-table">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha (Última)</th>
+                                        <th>MAC</th>
+                                        <th>Señal (Últ.)</th>
+                                        <th>Detecciones (Nodo)</th>
+                                        <th>Total Global</th>
+                                        <th>Visto en Nodos</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-${node.id}"></tbody>
+                            </table>
+                            <div class="pagination" id="pag-${node.id}"></div>
+                        </div>
+                    </td>
+                `;
+
+                tbody.appendChild(tr);
+                tbody.appendChild(trDetails);
+            });
+        }
+
+        let currentOpenNode = null;
+
+        function toggleDetails(nodeId, row) {
+            // Prevent toggling if clicked on modal (though modal is overlay)
+            const detailsRow = document.getElementById(`details-${nodeId}`);
+
+            if (detailsRow.style.display === 'table-row') {
+                detailsRow.style.display = 'none';
+                row.classList.remove('active');
+                currentOpenNode = null;
+            } else {
+                // Close others
+                if (currentOpenNode && currentOpenNode !== nodeId) {
+                    document.getElementById(`details-${currentOpenNode}`).style.display = 'none';
+                    const prevRow = document.querySelector(`.node-row.active`);
+                    if (prevRow) prevRow.classList.remove('active');
+                }
+
+                detailsRow.style.display = 'table-row';
+                row.classList.add('active');
+                currentOpenNode = nodeId;
+                loadNodeData(nodeId, 1);
+            }
+        }
+
+        // --- MAC PROFILE MODAL LOGIC ---
+        let currentProfileMac = '';
+
+        function closeModals() {
+            document.getElementById('profileModal').classList.remove('active');
+        }
+
+        async function openMacProfile(mac, event, date = null) {
+            // Prevent row accordion toggle
+            if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
+
+            const isSameMac = (currentProfileMac === mac && document.getElementById('profileModal').classList.contains('active'));
+            currentProfileMac = mac;
+
+            if (!date && !isSameMac) {
+                document.getElementById('pmMac').innerHTML = `MAC: ${mac} <span class="edit-icon" onclick="editAlias('mac', '${mac}')">✏️</span>`;
+                document.getElementById('pmVendor').innerText = "Cargando perfil...";
+                document.getElementById('profileModal').classList.add('active');
+
+                // Reset UI
+                document.getElementById('pmFirst').innerText = "-";
+                document.getElementById('pmLast').innerText = "-";
+                document.getElementById('pmTotal').innerText = "-";
+                document.getElementById('hourlyChart').innerHTML = "";
+                document.getElementById('dailyChart').innerHTML = "";
+                document.getElementById('topNodesBody').innerHTML = "";
+                document.getElementById('hourlyLabel').innerText = "(Promedio Global)";
+            }
+
+            try {
+                let url = `/api/mac_profile?mac=${mac}`;
+                if (date) url += `&date=${date}`;
+
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (!date) {
+                    const displayAlias = data.alias ? `MAC: ${data.alias} <small>(${mac})</small>` : `MAC: ${mac}`;
+                    const vendorColor = (data.vendor === 'Desconocido' || data.vendor.includes('Random')) ? '#ef4444' : '#94a3b8';
+
+                    document.getElementById('pmMac').innerHTML = `${displayAlias} <span class="edit-icon" onclick="editAlias('mac', '${mac}')">✏️</span>`;
+                    document.getElementById('pmVendor').innerHTML = `Fabricante: <span style="color:${vendorColor}">${data.vendor}</span>`;
+
+                    document.getElementById('pmFirst').innerText = new Date(data.first_seen).toLocaleString();
+                    document.getElementById('pmLast').innerText = new Date(data.last_seen).toLocaleString();
+                    document.getElementById('pmTotal').innerText = data.total_detections;
+
+                    renderChart(data.daily_activity, 'dailyChart', true, date);
+                }
+
+                renderChart(data.hourly_activity, 'hourlyChart', false);
+
+                if (date) document.getElementById('hourlyLabel').innerText = `(${date})`;
+
+                if (!date) {
+                    const tbody = document.getElementById('topNodesBody');
+                    tbody.innerHTML = '';
+                    data.top_nodes.forEach(n => {
+                        const nodeDisplay = n.alias ? `${n.alias} <small>(${n.node})</small>` : n.node;
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${nodeDisplay}</td>
+                            <td>${n.count}</td>
+                            <td style="font-size:0.8em; color:#94a3b8;">${new Date(n.last_seen).toLocaleDateString()}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+
+            } catch (e) {
+                console.error(e);
+                document.getElementById('pmVendor').innerText = "Error cargando perfil.";
+            }
+        }
+
+        function renderChart(data, containerId, isDaily, selectedDate = null) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            container.style.display = 'flex';
+            container.style.flexDirection = 'column';
+
+            if (!data || data.length === 0) {
+                container.innerHTML = '<div style="width:100%; text-align:center; color:#64748b; font-size:0.8rem; padding-top:20px;">Sin datos</div>';
+                return;
+            }
+
+            let values = [];
+            if (isDaily) values = data.map(d => d.count);
+            else values = data;
+
+            const maxVal = Math.max(...values) || 1;
+
+            // --- CHART AREA ---
+            const chartArea = document.createElement('div');
+            chartArea.style.cssText = 'position:relative; flex:1; display:flex; align-items:flex-end; width:100%; border-bottom:1px solid #334155;';
+            container.appendChild(chartArea);
+
+            // --- LABELS AREA ---
+            const labelsArea = document.createElement('div');
+            labelsArea.style.cssText = 'height:20px; display:flex; width:100%; justify-content:space-between; padding-top:4px;';
+            container.appendChild(labelsArea);
+
+            [0.25, 0.5, 0.75].forEach(p => {
+                const line = document.createElement('div');
+                line.className = 'chart-grid';
+                line.style.bottom = `${p * 100}%`;
+
+                const valLabel = document.createElement('span');
+                valLabel.innerText = Math.round(maxVal * p);
+                valLabel.style.cssText = 'position:absolute; left:0; bottom:2px; font-size:0.6rem; color:#64748b; background:rgba(15,23,42,0.8); padding:0 2px;';
+                line.appendChild(valLabel);
+
+                chartArea.appendChild(line);
+            });
+
+            data.forEach((item, idx) => {
+                const val = isDaily ? item.count : item;
+                const rawLabel = isDaily ? item.date : `${idx}h`;
+
+                const bar = document.createElement('div');
+                bar.className = isDaily ? 'chart-bar day' : 'chart-bar';
+                const heightPct = (val / maxVal) * 100;
+                bar.style.height = `${heightPct}%`;
+                bar.setAttribute('data-val', `${rawLabel}: ${val}`);
+
+                if (isDaily) {
+                    if (selectedDate && rawLabel === selectedDate) {
+                        bar.classList.add('active');
+                    }
+                    bar.onclick = () => {
+                        const wasActive = bar.classList.contains('active');
+                        // Reset all
+                        chartArea.querySelectorAll('.chart-bar').forEach(b => b.classList.remove('active'));
+                        if (wasActive) {
+                            openMacProfile(currentProfileMac, null, null);
+                        } else {
+                            bar.classList.add('active');
+                            openMacProfile(currentProfileMac, null, item.date);
+                        }
+                    };
+                }
+                chartArea.appendChild(bar);
+            });
+
+            data.forEach((item, idx) => {
+                const lBox = document.createElement('div');
+                lBox.style.cssText = 'flex:1; text-align:center; font-size:0.6rem; color:#64748b; overflow:hidden;';
+                let text = "";
+                if (isDaily) text = item.date.split('-')[2];
+                else if (idx % 6 === 0) text = `${idx}h`;
+                lBox.innerText = text;
+                labelsArea.appendChild(lBox);
+            });
+        }
+
+        async function editAlias(type, id, event) {
+            if (event && event.stopPropagation) event.stopPropagation();
+
+            const newAlias = prompt(`Ingrese alias para ${type} ${id}:`);
+            if (newAlias !== null) {
+                try {
+                    let url = '/api/nodes';
+                    let body = { id, alias: newAlias };
+
+                    if (type === 'mac') {
+                        url = '/api/mac_profile';
+                        body = { id, alias: newAlias };
+                    }
+
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+
+                    if (res.ok) {
+                        alert('Alias guardado.');
+                        if (type === 'node') loadNodes();
+                        else if (currentProfileMac) openMacProfile(currentProfileMac);
+                    } else {
+                        alert('Error guardando alias.');
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert('Error de conexión.');
+                }
+            }
+        }
+
+        async function loadNodeData(nodeId, page) {
+            const tbody = document.getElementById(`tbody-${nodeId}`);
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Cargando datos...</td></tr>';
+
+            try {
+                const res = await fetch(`/api/node_macs?node=${nodeId}&page=${page}&limit=50`);
+                const data = await res.json();
+
+                renderSubTable(nodeId, data.data);
+                renderPagination(nodeId, data.page, data.total, data.limit);
+
+            } catch (e) {
+                console.error(e);
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#ef4444;">Error cargando datos</td></tr>';
+            }
+        }
+
+        function renderSubTable(nodeId, rows) {
+            const tbody = document.getElementById(`tbody-${nodeId}`);
+            tbody.innerHTML = '';
+
+            if (rows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No hay registros</td></tr>';
+                return;
+            }
+
+            rows.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${new Date(r.date).toLocaleString()}</td>
+                    <td style="font-family:monospace; color:var(--accent); cursor:pointer; font-weight:bold;" onclick="openMacProfile('${r.mac}', event)">${r.mac}</td>
+                    <td>${r.signal} dBm</td>
+                    <td>${r.count_node}</td>
+                    <td>${r.count_total}</td>
+                    <td style="font-size:0.8em; color:#94a3b8;">${r.nodes_list.join(', ')}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderPagination(nodeId, page, total, limit) {
+            const container = document.getElementById(`pag-${nodeId}`);
+            const totalPages = Math.ceil(total / limit);
+
+            if (totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = `
+                <button class="btn-page" onclick="loadNodeData('${nodeId}', ${page - 1})" ${page <= 1 ? 'disabled' : ''}>Anterior</button>
+                <span style="align-self:center; font-size:0.9rem;">Página ${page} de ${totalPages}</span>
+                <button class="btn-page" onclick="loadNodeData('${nodeId}', ${page + 1})" ${page >= totalPages ? 'disabled' : ''}>Siguiente</button>
+            `;
+        }
+
+        // Init
+        window.onload = loadNodes;
+    </script>
+</body>
+
+</html>

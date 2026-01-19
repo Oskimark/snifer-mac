@@ -160,6 +160,13 @@
             </div>
         </div>
 
+        <div style="margin-top:10px; border-top:1px solid #334155; padding-top:10px;">
+            <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" id="heatmapToggle" onchange="toggleHeatmap()">
+                <span style="color:#ef4444; font-weight:bold;">🔥 Mapa de Calor</span>
+            </label>
+        </div>
+
         <button onclick="window.location.href='index.html'" class="btn"
             style="background:#475569; color:white; margin-top:20px;">VOLVER AL DASHBOARD</button>
     </div>
@@ -167,6 +174,7 @@
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
     <script>
         // ---------------------------------------------------------
         // 1. CONSTANTES Y CONFIGURACIÓN
@@ -399,6 +407,7 @@
                     delete trackingSujetos[mac];
                 }
                 if (kalmanFilters[mac]) delete kalmanFilters[mac];
+                updateHeatmap();
                 return;
             }
 
@@ -447,16 +456,20 @@
 
                     const posEstimada = resolverPosicion(nodosInput);
                     if (posEstimada) {
-                        actualizarTrayectoria(mac, posEstimada, true);
+                        // Intensity based on detection count (log scale to avoid huge spikes)
+                        // Or just raw count? User said "amount of detections".
+                        // Raw count is straightforward.
+                        actualizarTrayectoria(mac, posEstimada, true, lecturas.length);
                     }
                 }
                 document.getElementById('status').innerText = "Sistema Listo";
+                updateHeatmap();
             } catch (e) {
                 console.error(e);
             }
         }
 
-        function actualizarTrayectoria(mac, pos, esHistorico = false) {
+        function actualizarTrayectoria(mac, pos, esHistorico = false, intensity = 1) {
             if (!trackingSujetos[mac]) {
                 trackingSujetos[mac] = {
                     marker: L.circleMarker(pos, { radius: 6, color: '#22c55e', fillOpacity: 1 }).addTo(map),
@@ -467,12 +480,46 @@
             }
 
             const sujeto = trackingSujetos[mac];
-            sujeto.history.push(pos);
+            // Store [lat, lng, intensity]
+            // Note: Leaflet Polyline ignores the 3rd element usually.
+            const pointWithIntensity = [pos[0], pos[1], intensity];
+            sujeto.history.push(pointWithIntensity);
             if (!esHistorico && sujeto.history.length > 50) sujeto.history.shift();
 
             sujeto.marker.setLatLng(pos);
             sujeto.path.setLatLngs(sujeto.history);
             if (esHistorico) map.panTo(pos);
+        }
+
+        // ---------------------------------------------------------
+        // 4. HEATMAP LOGIC
+        // ---------------------------------------------------------
+        let heatmapLayer = null;
+
+        function toggleHeatmap() {
+            updateHeatmap();
+        }
+
+        function updateHeatmap() {
+            const checkbox = document.getElementById('heatmapToggle');
+            if (!checkbox || !checkbox.checked) {
+                if (heatmapLayer) {
+                    map.removeLayer(heatmapLayer);
+                    heatmapLayer = null;
+                }
+                return;
+            }
+
+            const points = [];
+            Object.values(trackingSujetos).forEach(sujeto => {
+                sujeto.history.forEach(pt => points.push(pt));
+            });
+
+            if (heatmapLayer) {
+                heatmapLayer.setLatLngs(points);
+            } else {
+                heatmapLayer = L.heatLayer(points, { radius: 25, blur: 15, maxZoom: 17 }).addTo(map);
+            }
         }
 
         function timeSince(date) {

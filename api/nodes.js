@@ -16,7 +16,20 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-        const { id, lat, lng } = req.body;
+        const { id, lat, lng, alias } = req.body;
+
+        // Caso 1: Actualizar Alias
+        if (alias !== undefined && id) {
+            try {
+                await sql`UPDATE nodes SET alias = ${alias} WHERE id = ${id}`;
+                return res.status(200).json({ success: true });
+            } catch (err) {
+                console.error(err);
+                return res.status(500).json({ error: 'Error actualizando alias' });
+            }
+        }
+
+        // Caso 2: Actualizar Ubicación
         if (!id || lat === undefined || lng === undefined) {
             return res.status(400).json({ error: 'Faltan campos obligatorios' });
         }

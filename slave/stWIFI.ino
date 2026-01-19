@@ -189,14 +189,22 @@ void loop() {
   // MAP-04: Asegurar conexión antes de enviar (Promiscuous puede tumbar el
   // WiFi)
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("Reconectando WiFi...");
+    Serial.println("Reset de Radio p/ Transmitir...");
+    WiFi.disconnect();
+    WiFi.mode(WIFI_OFF);
+    delay(100);
+    WiFi.mode(WIFI_STA);
     WiFi.begin();
+
     int retries = 0;
-    while (WiFi.status() != WL_CONNECTED && retries < 20) {
+    while (WiFi.status() != WL_CONNECTED && retries < 40) {
       delay(500);
       Serial.print(".");
+      if (retries == 20)
+        WiFi.begin();
       retries++;
     }
+    Serial.println("");
   }
 
   if (WiFi.status() == WL_CONNECTED && datosAcumulados != "") {

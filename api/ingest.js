@@ -77,11 +77,20 @@ export default async function handler(req, res) {
             const oui = d.mac.replace(/:/g, '').substring(0, 6).toUpperCase();
             const detectedVendor = vendorMap[oui] || d.vendor || 'Fabricante Desconocido';
 
-            // 1. Insertar Detección
-            await sql`INSERT INTO detections (nodo, mac, rssi, fingerprint, vendor, raw_packet, created_at) 
-                      VALUES (${d.nodo}, ${d.mac}, ${d.rssi}, ${d.fingerprint}, ${detectedVendor}, ${d.raw_packet || ''}, NOW());`;
+            // Si el cliente envía un timestamp, lo usamos. Si no, usamos NOW().
+            // d.timestamp puede venir como número (ms) o string ISO.
+            const recordTime = d.timestamp ? new Date(d.timestamp).toISOString() : null;
 
-            // 2. Actualizar Nodo
+            // 1. Insertar Detección
+            if (recordTime) {
+              await sql`INSERT INTO detections (nodo, mac, rssi, fingerprint, vendor, raw_packet, created_at) 
+                          VALUES (${d.nodo}, ${d.mac}, ${d.rssi}, ${d.fingerprint}, ${detectedVendor}, ${d.raw_packet || ''}, ${recordTime});`;
+            } else {
+              await sql`INSERT INTO detections (nodo, mac, rssi, fingerprint, vendor, raw_packet, created_at) 
+                          VALUES (${d.nodo}, ${d.mac}, ${d.rssi}, ${d.fingerprint}, ${detectedVendor}, ${d.raw_packet || ''}, NOW());`;
+            }
+
+            // 2. Actualizar Nodo (last_seen siempre es el tiempo de recepción real)
             const nIdLower = d.nodo.toLowerCase();
             const nodeType = (nIdLower.includes('nodows') || nIdLower.includes('nodesw') || nIdLower.includes('standalone')) ? 'standalone' : 'mesh';
             await sql`INSERT INTO nodes (id, type, last_seen) 

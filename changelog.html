@@ -22,28 +22,47 @@
             color: #38bdf8;
             border-bottom: 2px solid #334155;
             padding-bottom: 10px;
+            margin-bottom: 30px;
         }
 
-        h2 {
+        .version-block {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #1e293b;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #8b5cf6;
+        }
+
+        .version-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .version-tag {
+            font-size: 1.5em;
             color: #8b5cf6;
-            margin-top: 30px;
+            font-weight: bold;
         }
 
-        .version {
-            background: #334155;
-            padding: 2px 8px;
-            border-radius: 4px;
+        .version-date {
+            color: #94a3b8;
             font-size: 0.9em;
         }
 
         ul {
             list-style: none;
             padding: 0;
+            margin: 0;
         }
 
         li {
-            margin-bottom: 10px;
-            padding-left: 20px;
+            margin-bottom: 8px;
+            padding-left: 25px;
             position: relative;
         }
 
@@ -52,11 +71,16 @@
             color: #38bdf8;
             position: absolute;
             left: 0;
+            font-size: 1.2em;
+            line-height: 1.4;
         }
 
-        .date {
-            color: #94a3b8;
-            font-size: 0.85em;
+        code {
+            background: #0f172a;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #fbbf24;
+            font-family: monospace;
         }
     </style>
 </head>
@@ -65,121 +89,293 @@
     <div class="container">
         <h1>📜 Registro de Cambios (Changelog)</h1>
 
-        <h2>Versión 1.3.0 <span class="version">ACTUAL</span></h2>
-        <p class="date">13 de Enero, 2026</p>
-        <ul>
-            <li><strong>Configuración de Dispositivos (Épica 5):</strong>
-                <ul>
-                    <li><strong>Portal de Configuración:</strong> Integración de <code>WiFiManager</code> en nodos
-                        standalone (<code>stWIFI.ino</code>).</li>
-                    <li><strong>Sin Hardcodeo:</strong> Ya no es necesario editar el código para cambiar el WiFi, el ID
-                        del Nodo o la URL de la API.</li>
-                    <li><strong>Punto de Acceso <code>SNIFER-CONFIG</code>:</strong> El nodo crea su propia red para
-                        configuración inicial o cambios en campo.</li>
-                    <li><strong>Persistencia LittleFS:</strong> Los parámetros personalizados se guardan de forma segura
-                        en el sistema de archivos del ESP8266.</li>
-                </ul>
-            </li>
-        </ul>
+        <!-- VERSION 1.7.0 -->
+        <div class="version-block" style="border-left-color: #22c55e;">
+            <div class="version-header">
+                <span class="version-tag">v1.7.0 <small
+                        style="color:#22c55e; font-size: 0.6em; vertical-align: middle;">ACTUAL</small></span>
+                <span class="version-date">18 de Enero, 2026</span>
+            </div>
+            <ul>
+                <li><strong>Sistema de Alias</strong>: Asigna nombres personalizados a MACs y Nodos (icono ✏️)
+                    persistentes en la nube.</li>
+                <li><strong>Histograma de 30 Días</strong>: Nueva gráfica de actividad diaria en el perfil MAC.</li>
+                <li><strong>Drill-down</strong>: Clic en barras del histograma diario para ver la rutina horaria de esa
+                    fecha específica.</li>
+                <li><strong>Integración Visor</strong>: Botón "Rastrear" desde perfil abre el visor táctico filtrado por
+                    esa MAC.</li>
+            </ul>
+        </div>
 
-        <h2>Versión 1.2.2</h2>
-        <p class="date">13 de Enero, 2026</p>
-        <ul>
-            <li><strong>Telemetría Avanzada y Estadísticas (Épica 4):</strong>
-                <ul>
-                    <li><strong>Nuevo Panel de MAC:</strong> Al hacer clic en una MAC, se muestra el total histórico de
-                        avistamientos y el desglose detallado por nodo.</li>
-                    <li><strong>Estadísticas Reales de Nodo:</strong> El panel lateral de nodo ahora muestra datos
-                        extraídos de la base de datos: Total Histórico y Detecciones en la última hora.</li>
-                    <li><strong>API de Estadísticas:</strong> Implementado <code>/api/stats</code> para agregación
-                        eficiente de datos.</li>
-                    <li><strong>Mejora de UX:</strong> Los paneles laterales se gestionan de forma inteligente para no
-                        solaparse.</li>
-                </ul>
-            </li>
-        </ul>
+        <!-- VERSION 1.8.0 -->
+        <div class="version-block">
+            <div class="version-header">
+                <span class="version-tag">v1.8.0</span>
+                <span class="version-date">19/01/2026</span>
+            </div>
+            <ul>
+                <li><strong>Geolocalización Inteligente:</strong> Implementación de algoritmos geométricos (Turf.js)
+                    para ubicar detecciones únicamente sobre calles y espacios públicos.</li>
+                <li><strong>Overpass API:</strong> Integración dinámica de datos de OpenStreetMap para obtener geometría
+                    urbana en tiempo real.</li>
+                <li><strong>Visor Espacial:</strong> Mejoras en la precisión visual del "Mapa de Calor" y puntos
+                    individuales.</li>
+                <li><strong>Correcciones:</strong> Ajustes en el cálculo de distancia basado en RSSI.</li>
+            </ul>
+        </div>
 
-        <h2>Versión 1.2.1</h2>
-        <p class="date">13 de Enero, 2026</p>
-        <ul>
-            <li><strong>Interfaz y Experiencia en Campo (Épica 3):</strong>
-                <ul>
-                    <li><strong>Refactorización de Clics:</strong> Separación de acciones en la tabla principal.</li>
-                    <li><strong>Acceso a Paquetes:</strong> Clic en el "Fingerprint" para abrir el Inspector Hexadecimal
-                        directamente.</li>
-                    <li><strong>Panel de Nodo (Sidebar):</strong> Nuevo panel lateral al hacer clic en el nombre del
-                        nodo con telemetría integrada.</li>
-                    <li><strong>Telemetría de Nodo:</strong> Visualización de salud (Online/Offline), tipo, coordenadas
-                        y conteo de capturas en tiempo real.</li>
-                </ul>
-            </li>
-        </ul>
+        <!-- VERSION 1.7.11 -->
+        <div class="version-block">
+            <div class="version-header">
+                <span class="version-tag">v1.7.11</span>
+                <span class="version-date">18/01/2026</span>
+            </div>
+            <ul>
+                <li><strong>Modal Perfil MAC</strong>: Vista centralizada con estadísticas, primeras/últimas detecciones
+                    y top nodos.</li>
+                <li><strong>Gráficas de Rutina</strong>: Visualización de actividad horaria promedio.</li>
+                <li><strong>Unificación UI</strong>: Acceso consistente al perfil desde Dashboard y Panel de Nodos.</li>
+            </ul>
+        </div>
 
-        <h2>Versión 1.2.0</h2>
-        <p class="date">13 de Enero, 2026</p>
-        <ul>
-            <li><strong>Gestión de Mapa Táctico (Épica 2):</strong>
-                <ul>
-                    <li><strong>Marcadores Arrastrables:</strong> Los sensores se pueden posicionar moviéndolos en el
-                        mapa.</li>
-                    <li><strong>Persistencia de Ubicación:</strong> Diálogo de confirmación para guardar coordenadas en
-                        base de datos.</li>
-                    <li><strong>Identificación Visual:</strong> Colores distintos para nodos Mesh (Rojo) y Standalone
-                        (Ambar).</li>
-                    <li><strong>Watchdog:</strong> Los nodos inactivos (>120s) cambian a color gris automáticamente.
-                    </li>
-                </ul>
-            </li>
-            <li><strong>Colorización de MACs:</strong> Distinción visual entre MACs reales (Azul) y aleatorias (Rojo).
-            </li>
-        </ul>
+        <!-- VERSION 1.6.0 -->
+        <div class="version-block">
+            <div class="version-header">
+                <span class="version-tag">v1.6.0</span>
+                <span class="version-date">18 de Enero, 2026</span>
+            </div>
+            <ul>
+                <li><strong>Modal Perfil MAC</strong>: Vista centralizada con estadísticas, primeras/últimas detecciones
+                    y top nodos.</li>
+                <li><strong>Gráficas de Rutina</strong>: Visualización de actividad horaria promedio.</li>
+                <li><strong>Unificación UI</strong>: Acceso consistente al perfil desde Dashboard y Panel de Nodos.</li>
+            </ul>
+        </div>
 
-        <h2>Versión 1.0.9</h2>
-        <p class="date">13 de Enero, 2026</p>
-        <ul>
-            <li><strong>Diagnóstico por Hardware (LED):</strong> Feedback visual mediante el LED integrado para estados
-                de captura, búsqueda de red y transmisión.</li>
-            <li><strong>Nuevo Nodo "WiFi Standalone":</strong> Introducción de <code>stWIFI.ino</code> para despliegues
-                sin red Mesh.</li>
-            <li><strong>Optimización de Captura:</strong> Mejoras en el buffer de envío para tramas extensas.</li>
-        </ul>
+        <!-- VERSION 1.5.0 -->
+        <div class="version-block" style="opacity: 0.8; border-left-color: #f59e0b;">
+            <div class="version-header">
+                <span class="version-tag">v1.5.0</span>
+                <span class="version-date">18 de Enero, 2026</span>
+            </div>
+            <ul>
+                <li><strong>Panel de Control de Nodos</strong>: Nueva interfaz dedicada (<code>nodos.html</code>) para
+                    monitorizar el estado, tráfico y métricas de cada sensor.</li>
+                <li><strong>Estadísticas Agregadas</strong>: Visualización de conteo total, actividad diaria, última
+                    hora y horas pico de tráfico por nodo.</li>
+                <li><strong>Detalle de Capturas</strong>: Desglose interactivo (acordeón) de las MACs detectadas por
+                    cada nodo con paginación optimizada.</li>
+                <li><strong>Estabilidad del Visor (v1.4.x)</strong>: Consolidación de mejoras en el visor táctico,
+                    incluyendo controles de reproducción estables y correcciones de interfaz.</li>
+            </ul>
+        </div>
 
-        <h2>Versión 1.0.8</h2>
-        <p class="date">13 de Enero, 2026</p>
-        <ul>
-            <li><strong>Inspector de Trama Avanzado:</strong> UI rediseñada tipo rejilla (grid) con colores específicos
-                para cada campo del frame 802.11.</li>
-            <li><strong>Metadatos de Radio:</strong> Se incluyen ahora los bytes de control del ESP8266 (RadioTap
-                Header) en la visualización.</li>
-            <li><strong>Tooltips Detallados:</strong> Cada byte ahora muestra su función al pasar el cursor.</li>
-        </ul>
+        <!-- VERSION 1.4.1 -->
+        <div class="version-block">
+            <div class="version-header">
+                <span class="version-tag">v1.4.1</span>
+                <span class="version-date">15 de Enero, 2026</span>
+            </div>
+            <ul>
+                <li><strong>Controles de Reproducción</strong>: Añadidos botones de ⏮ Anterior, ▶ Play/Pausa y ⏭
+                    Siguiente integrados en el timeline.</li>
+                <li><strong>Salto por Eventos</strong>: Los botones ⏮/⏭ permiten saltar instantáneamente entre los ticks
+                    de actividad real sin necesidad de arrastrar el slider.</li>
+                <li><strong>Auto-Playback</strong>: Función de recorrido automático por el historial con velocidad
+                    ajustable (1s a 60s de paso temporal).</li>
+                <li><strong>Sincronización de UI</strong>: Los estados de reproducción y velocidad se reflejan
+                    dinámicamente en etiquetas visuales.</li>
+            </ul>
+        </div>
 
-        <h2>Versión 1.0.7</h2>
-        <p class="date">13 de Enero, 2026</p>
-        <ul>
-            <li><strong>Captura de Paquete Completo:</strong> El esclavo ahora envía los primeros 64 bytes de la trama
-                802.11 real en hexadecimal.</li>
-            <li><strong>Visor de Paquetes Mejorado:</strong> El modal de detalle ahora discrimina bloques del frame real
-                (Frame Control, Duration, Addrs, Payload).</li>
-            <li><strong>Persistencia de Raw Data:</strong> Se añadió la columna <code>raw_packet</code> en la base de
-                datos para análisis forense.</li>
-            <li><strong>Headers de Versión:</strong> Todos los archivos críticos ahora incluyen una cabecera con su
-                versión y cambios.</li>
-        </ul>
+        <!-- VERSION 1.4.0 -->
+        <div class="version-block">
+            <div class="version-header">
+                <span class="version-tag">v1.4.0</span>
+                <span class="version-date">15 de Enero, 2026</span>
+            </div>
+            <ul>
+                <li><strong>Timeline Cronológico Lineal</strong>: El deslizador ahora representa el tiempo real de forma
+                    uniforme (segundos/minutos) en lugar de índices de registros.</li>
+                <li><strong>Marcas de Actividad (Ticks)</strong>: Visualización de pequeños indicadores en la barra de
+                    tiempo donde existen datos reales capturados.</li>
+                <li><strong>Regla de Tiempo Fija</strong>: Fondo del timeline con divisiones de días y etiquetas de
+                    fecha estáticas para una orientación espacial perfecta.</li>
+                <li><strong>Transiciones Suaves</strong>: El cambio entre modo día y noche en el mapa ahora es una
+                    transición de desvanecimiento suave (fade) de 3 segundos.</li>
+                <li><strong>Navegación por Proximidad</strong>: Búsqueda inteligente del reporte más cercano al tiempo
+                    seleccionado en la regla.</li>
+            </ul>
+        </div>
 
-        <h2>Versión 1.0.6</h2>
-        <p class="date">13 de Enero, 2026</p>
-        <ul>
-            <li><strong>Timestamp Estático:</strong> Cambio de tiempo relativo ("hace 2s") a fecha y hora absoluta en
-                GMT-3.</li>
-            <li><strong>Restauración de Visor:</strong> Re-implementación del modal de detalles mediante clic en la
-                lista.</li>
-        </ul>
+        <!-- VERSION 1.3.9 -->
+        <div class="version-block">
+            <div class="version-header">
+                <span class="version-tag">v1.3.9</span>
+                <span class="version-date">15 de Enero, 2026</span>
+            </div>
+            <ul>
+                <li><strong>Interfaz Avanzada</strong>: Línea de tiempo con fondos segmentados por día y colores
+                    identificativos.</li>
+                <li><strong>Mapa Dinámico</strong>: Implementado filtro nocturno automático para horas entre 20h y 06h.
+                </li>
+                <li><strong>Riel de Conexión</strong>: El objetivo se mueve estrictamente sobre los segmentos que
+                    conectan todos los nodos visitados.</li>
+                <li><strong>Ajuste de UI</strong>: Reubicación del panel de detalles para evitar solapamientos con el
+                    timeline.</li>
+            </ul>
+        </div>
 
-        <h2>Versión 1.0.5</h2>
-        <ul>
-            <li>Integración inicial con Vercel Postgres y Dashboard unificado.</li>
-        </ul>
+        <!-- VERSION 1.3.8 -->
+        <div class="version-block">
+            <div class="version-header">
+                <span class="version-tag">v1.3.8</span>
+                <span class="version-date">15 de Enero, 2026</span>
+            </div>
+            <ul>
+                <li><strong>Modelo Científico</strong>: Implementación del Modelo de Propagación Log-Normal de Sombras.
+                </li>
+                <li><strong>Selector de Entorno</strong>: Ajuste dinámico del Exponente de Pérdida (n=2.0 a 5.0) para
+                    diferentes escenarios.</li>
+                <li><strong>Distancia Real</strong>: Cálculo de posición basado en metros reales derivados del RSSI.
+                </li>
+            </ul>
+        </div>
+
+        <!-- VERSION 1.3.7 -->
+        <div class="version-block">
+            <div class="version-header">
+                <span class="version-tag">v1.3.7</span>
+                <span class="version-date">15 de Enero, 2026</span>
+            </div>
+            <ul>
+                <li><strong>Eje Dinámico</strong>: Identificación automática de los nodos principales de trayectoria.
+                </li>
+                <li><strong>Movimiento Unilateral</strong>: El objetivo se desplaza por el eje incluso con reportes de
+                    un solo nodo.</li>
+                <li><strong>Eliminación de Estáticos</strong>: El icono ya no se queda fijo sobre el nodo si el RSSI
+                    varía.</li>
+            </ul>
+        </div>
+
+        <!-- VERSION 1.3.6 -->
+        <div class="version-block">
+            <div class="version-header">
+                <span class="version-tag">v1.3.6</span>
+                <span class="version-date">15 de Enero, 2026</span>
+            </div>
+            <ul>
+                <li><strong>Proyección por Eje</strong>: Nuevo modelo de posicionamiento lineal entre nodos para
+                    eliminar dispersión lateral.</li>
+                <li><strong>Ghost Path Rectificado</strong>: Las líneas de trayectoria se ajustan al eje principal de la
+                    captura.</li>
+            </ul>
+        </div>
+
+        <!-- VERSION 1.3.5 -->
+        <div class="version-block">
+            <div class="version-header">
+                <span class="version-tag">v1.3.5</span>
+                <span class="version-date">15 de Enero, 2026</span>
+            </div>
+            <ul>
+                <li><strong>Refinamiento de MACs</strong>: El selector en el visor ahora solo muestra MACs detectadas
+                    por 2 o más nodos.</li>
+                <li><strong>UX de Selección</strong>: Añadido botón de limpieza rápida y auto-clear al enfocar el
+                    buscador de MACs.</li>
+            </ul>
+        </div>
+
+        <!-- VERSION 1.3.4 -->
+        <div class="version-block">
+            <div class="version-header">
+                <span class="version-tag">v1.3.4</span>
+                <span class="version-date">15 de Enero, 2026</span>
+            </div>
+            <ul>
+                <li><strong>Estandarización de Horarios</strong>: Se ha forzado el formato de 24 horas y la zona horaria
+                    <code>America/Argentina/Buenos_Aires</code> en todos los visores y tablas.
+                </li>
+                <li><strong>Corrección de Fecha</strong>: Eliminada la corrección manual de -3h en el visor temporal que
+                    causaba redundancia y saltos de día incorrectos al cruzar la medianoche UTC.</li>
+                <li><strong>Ingest API v1.3.0</strong>: La API ahora permite recibir un <code>timestamp</code> opcional
+                    desde el cliente (Uploader/Browser) para registrar el momento exacto de la captura si el cliente
+                    dispone de reloj.</li>
+            </ul>
+        </div>
+
+        <!-- VERSION 1.3.3 -->
+        <div class="version-block">
+            <div class="version-header">
+                <span class="version-tag">v1.3.3</span>
+                <span class="version-date">15 de Enero, 2026</span>
+            </div>
+            <ul>
+                <li><strong>Trayectorias Suavizadas</strong>: Implementación del algoritmo "Weighted Centroid"
+                    (Centroide Ponderado) para suavizar el movimiento del objetivo entre nodos según el RSSI.</li>
+                <li><strong>Agrupamiento Temporal</strong>: Las detecciones se agrupan en ventanas de 10 segundos para
+                    una navegación más fluida y lógica en el timeline.</li>
+            </ul>
+        </div>
+
+        <!-- VERSION 1.3.2 -->
+        <div class="version-block">
+            <div class="version-header">
+                <span class="version-tag">v1.3.2</span>
+                <span class="version-date">15 de Enero, 2026</span>
+            </div>
+            <ul>
+                <li><strong>Mejoras Visuales en Visor</strong>: Marcador de objetivo cambiado a icono de celular 📱.
+                </li>
+                <li><strong>Auto-centrado</strong>: Control opcional para seguir automáticamente al objetivo en el mapa.
+                </li>
+                <li><strong>Timeline Cromático</strong>: El slider de tiempo cambia de color según el día del registro
+                    para identificar saltos temporales.</li>
+                <li><strong>Inspector de Tramas Integrado</strong>: Re-utilización del visor hexadecimal coloreado
+                    dentro del visor temporal.</li>
+            </ul>
+        </div>
+
+        <!-- VERSION 1.3.1 -->
+        <div class="version-block">
+            <div class="version-header">
+                <span class="version-tag">v1.3.1</span>
+                <span class="version-date">15 de Enero, 2026</span>
+            </div>
+            <ul>
+                <li><strong>Módulo de Visualización Temporal (Visor)</strong>: Lanzamiento de <code>visor.html</code>
+                    para tracking histórico.</li>
+                <li><strong>Cloud Polling</strong>: El dashboard ahora consulta automáticamente la nube cada 15s para
+                    mostrar datos de nodos autónomos (standalone).</li>
+            </ul>
+        </div>
+
+        <!-- VERSIONES ANTERIORES (RESUMIDAS) -->
+        <div class="version-block" style="opacity: 0.8; border-left-color: #475569;">
+            <div class="version-header">
+                <span class="version-tag">v1.2.x</span>
+                <span class="version-date">13 de Enero, 2026</span>
+            </div>
+            <ul>
+                <li><strong>Node Configuration</strong>: Integración de WiFiManager y portal cautivo.</li>
+                <li><strong>Node Telemetry</strong>: Sidebars con estadísticas históricas y estado online/offline.</li>
+                <li><strong>Map UI</strong>: Marcadores arrastrables y persistencia de coordenadas en base de datos.
+                </li>
+            </ul>
+        </div>
+
+        <div class="version-block" style="opacity: 0.6; border-left-color: #475569;">
+            <div class="version-header">
+                <span class="version-tag">v1.0.x</span>
+                <span class="version-date">11-12 de Enero, 2026</span>
+            </div>
+            <ul>
+                <li><strong>Packet Inspector</strong>: Desglose por colores de tramas 802.11.</li>
+                <li><strong>Vercel Postgres</strong>: Persistencia de datos en la nube.</li>
+                <li><strong>Mesh Support</strong>: Comunicación entre nodos maestro y esclavos.</li>
+            </ul>
+        </div>
+
     </div>
 </body>
 
