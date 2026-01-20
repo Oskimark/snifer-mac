@@ -664,6 +664,10 @@
                 <button class="btn btn-action" onclick="window.open('nodos.html', '_blank')"
                     style="background:#f59e0b; color:black; font-weight:bold;">🎛️ PANEL NODOS</button>
 
+                <!-- Admin Panel Button (only for admins) -->
+                <button id="adminPanelBtn" class="btn btn-action" onclick="window.open('admin.html', '_blank')"
+                    style="background:#ef4444; color:white; font-weight:bold; display:none;">👥 ADMIN</button>
+
                 <!-- User Menu -->
                 <div
                     style="display:flex; align-items:center; gap:10px; margin-left:20px; padding-left:20px; border-left:2px solid var(--border);">
@@ -1499,6 +1503,11 @@
         (async function () {
             const user = await checkAuth();
             if (!user) return; // Will redirect to login
+
+            // Show admin panel button only for admins
+            if (user.role === 'admin') {
+                document.getElementById('adminPanelBtn').style.display = 'inline-block';
+            }
 
             // Continue with normal initialization
             console.log('User authenticated:', user.email);

@@ -17,7 +17,7 @@ async function checkAuth() {
     }
 
     try {
-        const response = await fetch('/api/auth/session', {
+        const response = await fetch('/api/auth?action=session', {
             headers: {
                 'Authorization': `Bearer ${sessionToken}`
             }
@@ -62,7 +62,7 @@ async function logout() {
 
     if (sessionToken) {
         try {
-            await fetch('/api/auth/logout', {
+            await fetch('/api/auth?action=logout', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${sessionToken}`
