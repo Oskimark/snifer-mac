@@ -3,6 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="/js/auth.js"></script>
     <title>Panel de Control de Nodos - Snifer</title>
     <style>
         :root {
@@ -797,7 +799,13 @@
         }
 
         // Init
-        window.onload = loadNodes;
+        window.onload = async () => {
+            // Auth check
+            const user = await checkAuth();
+            if (!user) return;
+
+            loadNodes();
+        };
     </script>
 </body>
 

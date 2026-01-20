@@ -11,6 +11,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <script src="/js/auth.js"></script>
     <title>WiFi Sniffer Pro - Mesh Dashboard</title>
     <style>
         :root {
@@ -662,6 +663,16 @@
                 <button id="serialBtn" class="btn btn-connect" style="display:none;">CONECTAR MAESTRO</button>
                 <button class="btn btn-action" onclick="window.open('nodos.html', '_blank')"
                     style="background:#f59e0b; color:black; font-weight:bold;">🎛️ PANEL NODOS</button>
+
+                <!-- User Menu -->
+                <div
+                    style="display:flex; align-items:center; gap:10px; margin-left:20px; padding-left:20px; border-left:2px solid var(--border);">
+                    <span id="userEmail" style="font-size:0.9em; color:var(--accent);"></span>
+                    <span id="userRole" class="role-badge"
+                        style="font-size:0.75em; padding:4px 8px; border-radius:4px; background:#334155;"></span>
+                    <button class="btn" onclick="logout()" style="background:#ef4444; padding:8px 16px;">🚪
+                        Salir</button>
+                </div>
             </div>
         </header>
 
@@ -1484,6 +1495,14 @@
             searchTimeout = setTimeout(() => loadRecords(1), 500);
         });
 
+        // Authentication Check - Must be logged in to use dashboard
+        (async function () {
+            const user = await checkAuth();
+            if (!user) return; // Will redirect to login
+
+            // Continue with normal initialization
+            console.log('User authenticated:', user.email);
+        })();
 
     </script>
 </body>
