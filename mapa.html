@@ -5,13 +5,9 @@
     <meta charset="UTF-8">
     <title>Mapa Táctico - Sniffer Mesh con Trayectoria</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="/css/themes.css">
+    <script src="/js/themes.js"></script>
     <style>
-        :root {
-            --bg: #0f172a;
-            --panel: #1e293b;
-            --accent: #38bdf8;
-        }
-
         body {
             margin: 0;
             padding: 0;
@@ -117,7 +113,10 @@
 <body>
 
     <div class="info-panel">
-        <h3 style="margin:0 0 5px 0; color:var(--accent);">🛰️ Tracking Táctico</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="margin:0; color:var(--accent);">🛰️ Tracking Táctico</h3>
+            <div id="themeContainer"></div>
+        </div>
         <div id="status" style="font-size: 0.85rem; color: #94a3b8;">Sistema Listo</div>
 
         <div class="device-list">
@@ -549,6 +548,7 @@
         }
 
         window.onload = () => {
+            injectThemeSwitcher('themeContainer');
             loadNodes();
             cargarMACs();
         };

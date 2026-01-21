@@ -1,0 +1,114 @@
+:root {
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --text: #f8fafc;
+    --accent: #38bdf8;
+    --border: #334155;
+    --btn-height: 60px;
+}
+
+/* Grayscale Theme (Llamado "Mono" en el UI) */
+body.theme-claro {
+    --bg: #f8fafc;
+    --panel: #ffffff;
+    --text: #0f172a;
+    --accent: #334155;
+    --border: #e2e8f0;
+}
+
+/* Light Blue/Gray Theme (Llamado "Claro" en el UI) */
+body.theme-mono {
+    --bg: #f1f5f9;
+    --panel: #e2e8f0;
+    --text: #1e293b;
+    --accent: #3b82f6;
+    --border: #cbd5e1;
+}
+
+/* Global Button Standardization */
+.btn,
+.btn-action,
+.btn-save,
+.btn-connect,
+.btn-disconnect,
+.back-btn,
+.btn-create,
+.btn-main,
+.timeline-btn {
+    height: var(--btn-height) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 18px !important;
+    border-radius: 6px !important;
+    font-weight: bold !important;
+    cursor: pointer !important;
+    transition: 0.2s !important;
+    font-size: 0.85rem !important;
+    box-sizing: border-box !important;
+    text-decoration: none !important;
+}
+
+/* Theme overrides for buttons in Light mode */
+body.theme-claro .btn,
+body.theme-claro .btn-action,
+body.theme-claro .btn-save,
+body.theme-claro .btn-connect,
+body.theme-claro .back-btn,
+body.theme-claro .btn-create,
+body.theme-claro .btn-main,
+body.theme-claro .timeline-btn {
+    border: 1px solid var(--border) !important;
+    background: var(--panel) !important;
+    color: var(--text) !important;
+    box-shadow: none !important;
+}
+
+/* Theme Selector Styling */
+.theme-selector {
+    height: var(--btn-height);
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0 10px;
+    font-weight: bold;
+    cursor: pointer;
+    outline: none;
+}
+
+/* Table and Other Common Element Adjustments */
+body.theme-claro table,
+body.theme-claro .modal-content,
+body.theme-claro .sidebar,
+body.theme-claro .info-panel,
+body.theme-claro .control-panel,
+body.theme-claro .data-overlay {
+    background: var(--panel) !important;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+}
+
+body.theme-claro th {
+    background: #e2e8f0 !important;
+    color: var(--accent) !important;
+}
+
+body.theme-claro tr:hover {
+    background: #f1f5f9 !important;
+}
+
+/* No grayscale filter needed for new theme roles */
+
+body.theme-mono .btn,
+body.theme-mono .btn-action,
+body.theme-mono .btn-save,
+body.theme-mono .btn-connect,
+body.theme-mono .back-btn,
+body.theme-mono .btn-create,
+body.theme-mono .btn-main,
+body.theme-mono .timeline-btn {
+    background: var(--panel) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--border) !important;
+}

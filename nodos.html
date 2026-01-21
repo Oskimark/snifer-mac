@@ -6,16 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="/js/auth.js"></script>
     <title>Panel de Control de Nodos - Snifer</title>
+    <link rel="stylesheet" href="/css/themes.css">
+    <script src="/js/themes.js"></script>
     <style>
-        :root {
-            --bg: #0f172a;
-            --panel: #1e293b;
-            --text: #f8fafc;
-            --accent: #38bdf8;
-            --border: #334155;
-            --hover: #2d3a4f;
-        }
-
         body {
             font-family: 'Segoe UI', sans-serif;
             background: var(--bg);
@@ -343,7 +336,8 @@
                 <div style="font-size: 0.9rem; color: #94a3b8; margin-top:5px;">Supervisión y auditoría de sensores
                     desplegados</div>
             </div>
-            <div>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div id="themeContainer"></div>
                 <button onclick="window.location.href='index.html'"
                     style="background:none; border:1px solid var(--border); color:var(--text); padding:8px 12px; border-radius:6px; cursor:pointer;">
                     🏠 Volver al Dashboard
@@ -804,6 +798,7 @@
             const user = await checkAuth();
             if (!user) return;
 
+            injectThemeSwitcher('themeContainer');
             loadNodes();
         };
     </script>

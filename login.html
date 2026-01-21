@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Snifer - Login</title>
+    <link rel="stylesheet" href="/css/themes.css">
+    <script src="/js/themes.js"></script>
     <style>
         * {
             margin: 0;
@@ -160,10 +162,11 @@
 
 <body>
     <div class="login-container">
-        <div class="logo">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
             <h1>🔒 Snifer</h1>
-            <p>Sistema de Monitoreo WiFi</p>
+            <div id="themeContainer"></div>
         </div>
+        <p>Sistema de Monitoreo WiFi</p>
 
         <div id="errorMessage" class="error-message"></div>
 
@@ -267,6 +270,9 @@
                 errorMessage.classList.remove('show');
             }, 5000);
         }
+
+        // Init theme switcher
+        injectThemeSwitcher('themeContainer');
     </script>
 </body>
 

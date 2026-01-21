@@ -4,6 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Changelog - Snifer Tactico</title>
+    <link rel="stylesheet" href="/css/themes.css">
+    <script src="/js/themes.js"></script>
     <style>
         body {
             font-family: sans-serif;
@@ -87,13 +89,50 @@
 
 <body>
     <div class="container">
-        <h1>📜 Registro de Cambios (Changelog)</h1>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h1>📜 Registro de Cambios (Changelog)</h1>
+            <div id="themeContainer"></div>
+        </div>
+
+        <!-- VERSION 2.2.0 -->
+        <div class="version-block" style="border-left-color: #10b981;">
+            <div class="version-header">
+                <span class="version-tag">v2.2.0 <small
+                        style="color:#10b981; font-size: 0.6em; vertical-align: middle;">ACTUAL</small></span>
+                <span class="version-date">21 de Enero, 2026</span>
+            </div>
+            <ul>
+                <li><strong>UI Refinement</strong>: Altura de botones incrementada al 50% (60px) para mejor legibilidad
+                    y toque.</li>
+                <li><strong>Header Layout</strong>: Reubicación de información de usuario (email, rol) y botón de salida
+                    a una fila superior en el dashboard.</li>
+                <li><strong>Theme Overhaul</strong>: Reestructuración de temas Claro y Mono. El nuevo tema "Claro" ahora
+                    utiliza una paleta de grises y celestes claros.</li>
+                <li><strong>Theme Label Swap</strong>: Intercambio de etiquetas para mayor coherencia visual.</li>
+            </ul>
+        </div>
+
+        <!-- VERSION 2.1.0 -->
+        <div class="version-block" style="border-left-color: #38bdf8;">
+            <div class="version-header">
+                <span class="version-tag">v2.1.0</span>
+                <span class="version-date">21 de Enero, 2026</span>
+            </div>
+            <ul>
+                <li><strong>Temas Globales</strong>: Implementación de sistema de temas (🎨 Color, ☀️ Claro, 🏁 Mono)
+                    persistente en todas las páginas.</li>
+                <li><strong>Unificación de UI</strong>: Altura de botones estandarizada (40px) y selectores de tema
+                    integrados en todos los encabezados.</li>
+                <li><strong>Refactorización CSS/JS</strong>: Migración a archivos compartidos (<code>themes.css</code> y
+                    <code>themes.js</code>) para facilitar el mantenimiento.
+                </li>
+            </ul>
+        </div>
 
         <!-- VERSION 1.7.0 -->
         <div class="version-block" style="border-left-color: #22c55e;">
             <div class="version-header">
-                <span class="version-tag">v1.7.0 <small
-                        style="color:#22c55e; font-size: 0.6em; vertical-align: middle;">ACTUAL</small></span>
+                <span class="version-tag">v1.7.0</span></span>
                 <span class="version-date">18 de Enero, 2026</span>
             </div>
             <ul>
@@ -377,6 +416,9 @@
         </div>
 
     </div>
+    <script>
+        injectThemeSwitcher('themeContainer');
+    </script>
 </body>
 
 </html>
